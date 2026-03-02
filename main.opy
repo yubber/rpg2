@@ -81,7 +81,7 @@ rule "init":
 
 rule "visuals":
 	### player
-	hudText(getAllPlayers(), heroIcon(localPlayer.getHero()), f"level {localPlayer.level}", localPlayer.cash, HudPosition.ACTUALLY_LEFT, -1)
+	hudText(getAllPlayers(), heroIcon(localPlayer.getHero()), f"level {localPlayer.level}", f"{localPlayer.cash}{'' if localPlayer.cash == 0 else '00'} gold", HudPosition.ACTUALLY_LEFT, -1)
 	### world
 	# gold
 	createEffect(getAllPlayers(), Effect.RING, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
@@ -157,11 +157,14 @@ rule "in a spawn":
 	@Condition eventPlayer.isInSpawnRoom()
 	eventPlayer.setDamageDealt(0)
 	eventPlayer.setMoveSpeed(200)
-	bigMessage(eventPlayer, "welcome to the tavern! (safe zone)")
+	if distance(eventPlayer.getPosition(), townPos) < 20:
+		bigMessage(eventPlayer, "welcome to the tavern! (safe zone)")
 
 	waitUntil(not eventPlayer.isInSpawnRoom(), 99999)
 	bigMessage(eventPlayer, "entered the ruins (pvp enabled)")
 	setStats()
+	wait(0.12, Wait.RESTART_WHEN_TRUE)
+	heal(eventPlayer, null, 70)
 
 rule "phase":
 	@Event eachPlayer
@@ -203,7 +206,7 @@ rule "ded":
 	@Event playerDied
 	if eventPlayer.pkBounty > 0:
 		eventPlayer.cash -= eventPlayer.pkBounty
-		alignSmallMsg(eventPlayer, "murderer penalty: -${}".format(eventPlayer.pkBounty))
+		alignSmallMsg(eventPlayer, "murderer penalty: -{} gold".format(eventPlayer.pkBounty))
 	eventPlayer.pkBounty = 0
 	eventPlayer.pkTimer = 0
 

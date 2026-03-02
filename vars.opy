@@ -18,7 +18,7 @@ globalvar statPos = [vect(-5.77, 1, 2.2), vect(-6.05, 1, 4.2), vect(-6.27, 1, 6.
 globalvar statCosts = []
 
 macro startStats = [100,100,100,100,100,0]
-macro statHardCaps = [5000000,5000000,5000000,2500,600,1]
+macro statHardCaps = [5000000,5000000,5000000,2500,600,5000000,100,1]
 macro statStartCaps = []
 
 playervar stats
