@@ -22,3 +22,11 @@ rule "winter":
 	eventPlayer.clearStatusEffect(Status.FROZEN)
 	wait(29, Wait.IGNORE_CONDITION)
 	alignSmallMsg(eventPlayer, "oath of winter ability ready")
+
+rule "autumn":
+	@Event eachPlayer
+	@Condition eventPlayer.oath == OATH.AUTUMN
+	@Condition eventPlayer.isJumping()
+	eventPlayer.setJumpEnabled(false)
+	wait(7)
+	eventPlayer.setJumpEnabled(true)

@@ -13,10 +13,10 @@ globalvar statColors = [Color.RED, Color.GREEN, Color.YELLOW, Color.AQUA, Color.
 
 globalvar oathNames = ["summer","autumn","winter","spring"]
 macro oathDescs = [
-	f"you take and deal 30% more damage to players.\nyou must have 300% damage stat.",
-	f"1000% jump height, 500% gravity.\njump has a 7s cooldown.\nyou must have 200% speed stat.",
-	f"crouch and stay still for 1s:\nfreeze enemies within 15m for 5s and yourself for 1s.\n30s cooldown. you must have 300% hp stat.",
-	f"heal 10hp/s if without murderer status.\nmurderer duration doubled.\nyou must have 250% healing stat."
+	f"you take and deal 30% more damage to players.\n\nyou must have 300% damage stat.",
+	f"800% jump height, 500% gravity.\njump has a 7s cooldown.\n\nyou must have 200% speed stat.",
+	f"crouch and stay still for 1s:\nfreeze enemies within 15m for 5s and yourself for 1s.\n\n30s cooldown. you must have 300% hp stat.",
+	f"heal 10hp/s if without murderer status.\nmurderer duration doubled.\n\nyou must have 250% healing stat."
 ]
 globalvar oathIcons = [
 	abilityIconString(Hero.ILLARI, Button.ULTIMATE),
