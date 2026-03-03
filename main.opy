@@ -49,15 +49,15 @@ settings {
     }
 }
 
+macro alignSmallMsg(player, message):
+	smallMessage(player, "    {}".format(message))
+
 #!include "vars.opy"
 #!include "strings.opy"
 #!include "adds.opy"
 #!include "poosaytions.opy"
 
 macro MoneyMult = eventPlayer.stats[STATS.INCOME] / 100
-
-macro alignSmallMsg(player, message):
-	smallMessage(player, "    {}".format(message))
 
 def setStats():
 	eventPlayer.setDamageDealt(eventPlayer.stats[STATS.DMG] * statMults[STATS.DMG])
@@ -82,6 +82,11 @@ rule "init":
 rule "visuals":
 	### player
 	hudText(getAllPlayers(), heroIcon(localPlayer.getHero()), f"level {localPlayer.level}", f"{localPlayer.cash}{'' if localPlayer.cash == 0 else '00'} gold", HudPosition.ACTUALLY_LEFT, -1)
+
+	progressBarHud(localPlayer, 100 * localPlayer.questProg / localPlayer.questGoal,
+        "get a quest in the tavern" if localPlayer.questType == QUEST.NONE
+        else " {}{}\&fullwidth_space;\&fullwidth_space;\&fullwidth_space;\&fullwidth_space;reward: {} gold".format(questText[localPlayer.questType], b"{} / {} ".format(localPlayer.questProg, localPlayer.questGoal) if localPlayer.questType in NumQuests else b"{} ".format(localPlayer.questGoal), questReward), HudPosition.TOP, 1, Color.GRAY if localPlayer.questType == -1 else Color.ORANGE, Color.GRAY if localPlayer.questType == -1 else Color.ORANGE, ProgressHudReeval.VISIBILITY_VALUES_AND_COLOR, SpecVisibility.DEFAULT)
+
 	### world
 	# gold
 	createEffect(getAllPlayers(), Effect.RING, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
@@ -99,9 +104,9 @@ rule "visuals":
 
 		# hud
 		if statHardCaps[i] == 1:
-			hudSubtext(localPlayer if localPlayer.stats[evalOnce(i)] else null, statNames[i], HudPosition.ACTUALLY_LEFT, i, statColors[i], HudReeval.VISIBILITY)
+			hudSubheader(localPlayer if localPlayer.stats[evalOnce(i)] else null, statNames[i], HudPosition.ACTUALLY_LEFT, i, Color.SKY_BLUE, HudReeval.VISIBILITY)
 		else:
-			hudSubtext(localPlayer, f"{statNames[i]}: {localPlayer.stats[i]}%", HudPosition.ACTUALLY_LEFT, i, statColors[i], HudReeval.VISIBILITY)
+			hudSubheader(localPlayer, f"{statNames[i]}: {localPlayer.stats[i]}%", HudPosition.ACTUALLY_LEFT, i, Color.SKY_BLUE, HudReeval.VISIBILITY)
 
 		wait()
 	# oaths
@@ -124,6 +129,7 @@ rule "player init":
 	eventPlayer.setAllowedHeroes(getAllHeroes())
 	wait()
 	eventPlayer.stats = startStats
+	eventPlayer.cash = startingGold
 	setStats()
 ### player interactions
 # shop walks
@@ -181,6 +187,18 @@ rule "phase":
 
 	if ruleCondition:
 		loop()
+# questing
+rule "reroll quest":
+	@Event eachPlayer
+	@Condition eventPlayer.isInSpawnRoom()
+	@Condition eventPlayer.isHoldingButton(Button.INTERACT)
+
+rule "quest complete":
+	@Event eachPlayer
+	@Condition eventPlayer.questProg >= eventPlayer.questGoal
+	eventPlayer.cash += questReward
+	eventPlayer.questType = QUEST.NONE
+	eventPlayer.questProg = 0
 ### world clock stuff
 rule "interest":
 	@Event eachPlayer
@@ -192,6 +210,10 @@ rule "kill":
 	@Event playerDealtFinalBlow
 
 	# quest
+	if eventPlayer.questType == QUEST.KILL:
+		eventPlayer.questProg++
+	elif eventPlayer.questType == QUEST.BOUNTY and victim == eventPlayer.questGoal:
+		eventPlayer.questGoal = -1
 
 	# steal
 

@@ -19,7 +19,11 @@ globalvar statCosts = []
 
 macro startStats = [100,100,100,100,100,0]
 macro statHardCaps = [5000000,5000000,5000000,2500,600,5000000,100,1]
+macro rebirthCapIncrease = []
 macro statStartCaps = []
+
+macro startingGold = round(5000 * 1.2 ** floor(getTotalTimeElapsed() / 60))
+macro diamondValue = floor(getTotalTimeElapsed() / 6)
 
 playervar stats
 playervar statCaps
@@ -39,13 +43,26 @@ enum GUILD:
 playervar guild
 
 enum QUEST:
+	NONE = -1,
 	KILL,
 	BLOOD,
-	BOUNTY
+	BOUNTY,
+	GOLD,
+	DAMAGE,
+	ALTAR,
+
+macro NumQuests = [QUEST.KILL, QUEST.BLOOD, QUEST.GOLD, QUEST.DAMAGE,]
+macro questReward = (
+	questRewards[eventPlayer.questType]
+	* (2 if eventPlayer.guild == GUILD.MERC else 1)
+	* MoneyMult
+)
 
 playervar questGoal
 playervar questProg
 playervar questType
+
+macro questRewards = []
 
 playervar pkTimer
 playervar pkBounty

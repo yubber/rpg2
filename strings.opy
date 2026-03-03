@@ -34,7 +34,7 @@ globalvar guildNames = ["freelancer", "mercenary", "forager"]
 
 globalvar guildDescs = [
 	"quest reroll cooldown is 0.5s"
-	"quests will only be kills and grant 1.5x money. reroll cooldown is 10s",
+	"quests will only be killing and grant 2x money. reroll cooldown is 5s",
 	"cannot receive quests. 2x rewards from world objectives."
 ]
 
