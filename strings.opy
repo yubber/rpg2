@@ -1,6 +1,9 @@
 #!mainFile "main.opy"
 
-macro barista = heroIcon(Hero.ZENYATTA)
+macro buy1Bind = Button.INTERACT
+macro buyAllBind = Button.MELEE
+
+macro barista = heroIcon(Hero.TORBJORN)
 macro inspectPrompt = f"{buttonToString(Button.CROUCH)} {iconString(Icon.QUESTION_MARK)}"
 
 macro questText = ["kill players", "kill player", "damage players", "fill blood chalice", "dig up gold", "activate ancient altar"]
@@ -22,7 +25,7 @@ macro questQuips = [
 	],[
 		"sometimes i wonder how those vampires got so much gold.",
 		"how else do you think i make the beer that gives you max health?",
-		"i love those things. helps me sell health and healing."
+		"i love those things. makes people buy my health and healing."
 	],[
 		"go dig up some gold. if you find a phone in there do not open the photos!!!",
 		"there's lots of gold in that car wreck.",
@@ -34,14 +37,20 @@ macro questQuips = [
 ]
 
 globalvar statNames = ["damage", "health", "healing received", "projectile speed", "move speed", "income", "interest", "flight"]
-globalvar statColors = [Color.RED, Color.GREEN, Color.YELLOW, Color.AQUA, Color.LIME_GREEN, Color.YELLOW, Color.ROSE, Color.WHITE]
+globalvar statColors = [Color.RED, Color.GREEN, Color.YELLOW, Color.AQUA, Color.LIME_GREEN, Color.YELLOW, Color.ROSE, Color.WHITE, Color.TURQUOISE]
+
+macro SummerReq = 300
+macro AutumnReq = 250
+macro WinterReq = 300
+macro SpringReq = 250
+macro AutumnCd = 5
 
 globalvar oathNames = ["summer","autumn","winter","spring"]
 macro oathDescs = [
-	f"you take and deal 30% more damage to players.\n\nyou must have 300% damage stat.",
-	f"800% jump height (7s cooldown), 500% gravity.\n\nyou must have 150% speed stat.",
-	f"crouch and stay still for 1s:\nfreeze enemies within 15m for 5s and yourself for 1s.\n\n30s cooldown. you must have 300% hp stat.",
-	f"heal 10hp/s if without murderer status.\nmurderer duration doubled.\n\nyou must have 250% healing stat."
+	f"you take and deal 30% more damage.\n\nyou must have {SummerReq}% damage stat.",
+	f"800% jump height ({AutumnCd}s cooldown), 500% gravity.\n\nyou must have {AutumnReq}% speed stat.",
+	f"crouch and stay still for 1s:\nfreeze enemies within 15m for 5s and yourself for 1s.\n\n30s cooldown. you must have {WinterReq}% hp stat.",
+	f"heal 10hp/s if without murderer status.\nmurderer duration doubled.\n\nyou must have {SpringReq}% healing stat."
 ]
 globalvar oathIcons = [
 	abilityIconString(Hero.ILLARI, Button.ULTIMATE),
@@ -63,6 +72,8 @@ globalvar guildDescs = [
 	f"cannot receive quests. {foragerMult}x rewards from world objectives."
 ]
 
+macro mammonLure = "your spirit craves power, but your body can handle no more. meet me in the castle..."
+
 globalvar sinNames = ["pride", "sloth", "lust", "envy", "wrath", "gluttony"]
 globalvar sinDescs = [
 	"cannot take oaths. and your barrier size is doubled.",
@@ -72,5 +83,11 @@ globalvar sinDescs = [
 	"20% of damage you deal also affects you.",
 	"you lose 1% of your upgrades to a random stat on kill."
 ]
+
+globalvar shrineNames = ["the mountain", "lord mammon", "potential"]
+
+playervar lastKiller
+macro vengeanceDesc = f"curse the last player who killed you, instantly killing them.\nyou must stay alive in the circle for 20s. the target will be alerted.\ncannot start if they are in spawn.\nif successful, you must be killed again to reuse the ritual.\n\n{buttonToString(Button.INTERACT)} - start ritual against {localPlayer.lastKiller} (sacrifices 50% health)"
+globalvar vengeance_ticks
 
 macro rebirthDesc = f"give yourself to sin and i shall reward you.\n- start with +900% income mod per sin.\n- sins are locked in until your next rebirth.\n\n[{buttonToString(Button.CROUCH)}] kneel and be reborn"

@@ -14,17 +14,17 @@ globalvar i
 # user facing * statmult = actual change
 globalvar statMults = [0.2,0.2,0.2,0.2,1,1]
 # 0.82
-globalvar statPos = [vect(-5.77, 1, 2.2), vect(-6.05, 1, 4.2), vect(-6.27, 1, 6.21), vect(-20.29, 1, 0.41), vect(-20.72, 1, 2.4)]
-globalvar statCosts = [25, 25, 25, 5, 100, 7, ]
+globalvar statPos = [vect(-5.77, 1, 2.2), vect(-6.05, 1, 4.2), vect(-6.27, 1, 6.21), vect(-20.29, 1, 0.41), vect(-20.72, 1, 2.4), vect(-21.15, 1, 4.39), vect(-15.47, 1, 20.3)]
+globalvar statCosts = [25, 25, 25, 5, 100, 7, 1000, 5000000]
 
 globalvar goldPlayers
 globalvar gold_i
 macro goldMined = 25
 
-macro startStats =  		[100,	100,	100,		100,	100,100,	10,0]
-macro statHardCaps =		[5000000,5000000,5000000,	2500,	600,5000000,100,1]
-macro rebirthCapIncrease = 	[30000, 30000, 30000, 0,	0,		0,	30000,	10,0]
-macro startStatCaps =		[10000, 10000, 10000, 2500, 600, 	1,	10000,	50,1]
+macro startStats =  		[100,	100,	100,		100,	100,	100,	10,		0]
+macro statHardCaps =		[5000000,5000000,5000000,	500,	600,	5000000,100,	1]
+macro rebirthCapIncrease = 	[30000, 30000, 30000, 		0,		0,		30000,	50,		0]
+macro startStatCaps =		[10000, 10000, 10000, 		500, 	600, 	10000,	100,	1]
 
 playervar stats
 playervar statCaps
@@ -66,10 +66,10 @@ playervar questProg
 playervar questType
 playervar questRerollLock
 
-macro questRewardScales = [30, 50, 0.06, 0.15, 2, 110]
+macro questRewardScales = [30, 150, 0.06, 0.15, 2, 110]
 macro questReward(Player):
 	round(questRewardScales[Player.questType]
-		* Player.questGoal # non num quests set to 1 for completion
+		* (Player.questGoal if Player.questType in NumQuests else 1)
 		* (2 if Player.guild == GUILD.MERC else 1)
 		* MoneyMult(Player))
 
@@ -100,3 +100,10 @@ enum SINS:
 playervar sins = [false for x in SINS.toArray()]
 
 globalvar antiCrashOn
+
+# shrines
+enum SHRINES:
+	MOUNTAIN,
+	GREED,
+	ULT
+globalvar shrineOwners = [null,null,null]

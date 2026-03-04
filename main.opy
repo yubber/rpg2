@@ -43,7 +43,7 @@ settings {
                 "health%": 500,
                 "projectileSpeed%": 500,
                 "combatUltGen%": 50,
-                "passiveUltGen%": 400
+                "passiveUltGen%": 300
             }
         }
     }
@@ -95,13 +95,13 @@ def rerollQuest():
 			eventPlayer.questGoal = random.choice(getPlayers(Team.ALL).exclude(eventPlayer))
 			break
 		case QUEST.DAMAGE:
-    		eventPlayer.questGoal = random.randint(500, 2500)
+    		eventPlayer.questGoal = random.randint(500, 1500)
 			break
 		case QUEST.BLOOD:
-			eventPlayer.questGoal = random.randint(eventPlayer.getMaxHealth() * 1.5, eventPlayer.getMaxHealth() * 2)
+			eventPlayer.questGoal = random.randint(eventPlayer.getMaxHealth() * 0.5, eventPlayer.getMaxHealth() * 1)
 			break
 		case QUEST.GOLD:
-			eventPlayer.questGoal = random.randint(10, 75) * MoneyMult(eventPlayer)
+			eventPlayer.questGoal = random.randint(10, 75)
 			break
 		case QUEST.ALTAR:
 			eventPlayer.questGoal = 1
@@ -127,6 +127,9 @@ rule "init":
 
 	wait(10)
 	createDummy(Hero.ROADHOG, Team.ALL, -1, nearestWalkablePosition(Vector.UP), Vector.UP)
+	createDummy(Hero.DOMINA, Team.ALL, -1, nearestWalkablePosition(Vector.UP), Vector.UP)
+	createDummy(Hero.ZARYA, Team.ALL, -1, nearestWalkablePosition(Vector.UP), Vector.UP)
+	createDummy(Hero.ORISA, Team.ALL, -1, nearestWalkablePosition(Vector.UP), Vector.UP)
 
 rule "visuals":
 	### player
@@ -137,19 +140,19 @@ rule "visuals":
         else "{} {}\&fullwidth_space;\&fullwidth_space;reward: {} gold".format(questText[localPlayer.questType], "{} / {}".format(localPlayer.questProg, localPlayer.questGoal) if localPlayer.questType in NumQuests else "{}".format(localPlayer.questGoal), questReward(localPlayer)), HudPosition.TOP, 1, Color.GRAY if localPlayer.questType == -1 else Color.ORANGE, Color.GRAY if localPlayer.questType == -1 else Color.ORANGE, ProgressHudReeval.VISIBILITY_VALUES_AND_COLOR, SpecVisibility.DEFAULT)
 
 	createInWorldText(localPlayer if localPlayer.detectedShop != -1 else null, f"{localPlayer.stats[localPlayer.detectedShop]} / {localPlayer.statCaps[localPlayer.detectedShop]}% {statNames[localPlayer.detectedShop]}", updateEveryFrame(localPlayer.getEyePosition() + localPlayer.getFacingDirection() * 999 + Vector.UP * 99), 1.3, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, statColors[localPlayer.detectedShop])
-	createInWorldText(localPlayer if localPlayer.detectedShop != -1 else null, f"{buttonToString(Button.PRIMARY_FIRE)} buy\n{buttonToString(Button.SECONDARY_FIRE)} buy maximum", updateEveryFrame(localPlayer.getEyePosition() + localPlayer.getFacingDirection() * 999), 1.3, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE)
+	createInWorldText(localPlayer if localPlayer.detectedShop != -1 else null, f"{buttonToString(buy1Bind)} buy\n{buttonToString(buyAllBind)} buy maximum", updateEveryFrame(localPlayer.getEyePosition() + localPlayer.getFacingDirection() * 999), 1.3, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE)
 
 	### world
 	# quests
 	createEffect(getAllPlayers(), Effect.GOOD_AURA, Color.ORANGE, questPos, 2, EffectReeval.VISIBILITY)
 	createInWorldText(getAllPlayers(), barista, questPos, 3, Clip.SURFACES, WorldTextReeval.VISIBILITY)
-	createInWorldText(getAllPlayers(), f"{buttonToString(Button.PRIMARY_FIRE)} get a quest" if localPlayer.questRerollLock-1 < getTotalTimeElapsed() else f"reroll cooldown: {localPlayer.questRerollLock-1 - getTotalTimeElapsed()}s", questPos + Vector.UP, 1.2, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING)
+	createInWorldText(getAllPlayers(), f"{buttonToString(Button.INTERACT)} get a quest" if localPlayer.questRerollLock-1 < getTotalTimeElapsed() else f"reroll cooldown: {localPlayer.questRerollLock-1 - getTotalTimeElapsed()}s", questPos + Vector.UP, 1.2, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING)
 	# gold
 	createEffect(getAllPlayers(), Effect.RING, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
 	createEffect(getAllPlayers(), Effect.SPARKLES, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
 	createEffect(getAllPlayers(), Effect.SPARKLES_SOUND, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
-	createInWorldText(getAllPlayers(), "gold mine", goldPos + Vector.UP * 3, 2, Clip.SURFACES, WorldTextReeval.VISIBILITY)
-	createInWorldText(getAllPlayers(), f"{goldMined} gold /5s, split among miners", questPos, 2, Clip.SURFACES, WorldTextReeval.VISIBILITY)
+	createInWorldText(getAllPlayers(), "gold mine", goldPos + Vector.UP * 3, 2, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.YELLOW)
+	createInWorldText(getAllPlayers(), f"{goldMined} gold /5s\nsplit among miners", goldPos + Vector.UP * 2.5, 1.5, Clip.SURFACES, WorldTextReeval.VISIBILITY)
 
 	# bloods
 	for i in range(len(bloodPos)):
@@ -166,6 +169,7 @@ rule "visuals":
 		# shops
 		createEffect(getAllPlayers(), Effect.RING, statColors[i], statPos[i], 0.82, EffectReeval.VISIBILITY)
 		createInWorldText(getAllPlayers(), statNames[i], statPos[i]+Vector.UP, 1.3, Clip.SURFACES, WorldTextReeval.VISIBILITY, statColors[i])
+		createInWorldText(getAllPlayers(), f"{'+1%: ' if statHardCaps[i] != 1 else ''}{statCosts[i]} gold", statPos[i] + Vector.UP * 0.87, 1, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.WHITE)
 
 		# hud
 		if statHardCaps[i] == 1:
@@ -180,7 +184,7 @@ rule "visuals":
 		createEffect(getAllPlayers(), Effect.SPARKLES, oathColors[i], oathPos[i], 1.5, EffectReeval.VISIBILITY)
 		createInWorldText(getAllPlayers(), oathIcons[i], oathPos[i]+Vector.UP * 3, 2, Clip.SURFACES, WorldTextReeval.VISIBILITY, oathColors[i])
 		createInWorldText(getAllPlayers(), f"oath of {oathNames[i]}", oathPos[i]+Vector.UP * 2, 2.6, Clip.SURFACES, WorldTextReeval.VISIBILITY, oathColors[i])
-		createInWorldText(getAllPlayers(), inspectPrompt if localPlayer.isHoldingButton(Button.CROUCH) == false else f"{evalOnce(oathDescs[i])}{buttonToString(Button.INTERACT)} pledge", oathPos[i]+Vector.UP, 1, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING, Color.WHITE)
+		createInWorldText(getAllPlayers(), inspectPrompt if localPlayer.isHoldingButton(Button.CROUCH) == false else f"{evalOnce(oathDescs[i])}\n{buttonToString(Button.INTERACT)} pledge. max 1 oath.", oathPos[i]+Vector.UP, 1, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING, Color.WHITE)
 		wait()
 	# sins
 
@@ -201,9 +205,15 @@ rule "player init":
 	eventPlayer.cash = startingGold
 	eventPlayer.oath = OATH.NONE
 	eventPlayer.sins = [false for x in SINS.toArray()]
+	eventPlayer.currentChalice = -1
 	setStats()
 
 	wait()
+	# my moni
+	createInWorldText(getAllPlayers(), f"level {eventPlayer.level}\n{eventPlayer.cash} gold\n\n", eventPlayer, 1, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING, Color.YELLOW)
+
+	createInWorldText(getAllPlayers() if eventPlayer.pkExpiry > getTotalTimeElapsed() else null, f"{iconString(Icon.SKULL)} murderer\nbounty: {eventPlayer.pkBounty} gold\n\n\n\n\n", eventPlayer, 1, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING, Color.RED)
+
 	# blood orb
 	createBeam(getAllPlayers() if eventPlayer.currentChalice != -1 and eventPlayer.isAlive() else null, Beam.BAD, eventPlayer, bloodOrb(bloodPos[eventPlayer.currentChalice]), Color.RED, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
 ### player interactions
@@ -212,19 +222,19 @@ rule "buy 1":
 	@Event eachPlayer
 	@Condition eventPlayer.isInSpawnRoom()
 	@Condition eventPlayer.detectedShop != -1
-	@Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE)
+	@Condition eventPlayer.isHoldingButton(buy1Bind)
 	if eventPlayer.cash < statCosts[eventPlayer.detectedShop]:
 		alignSmallMsg(eventPlayer, "out of gold")
 		return
 	if eventPlayer.stats[eventPlayer.detectedShop] >= eventPlayer.statCaps[eventPlayer.detectedShop]:
-		alignSmallMsg(eventPlayer,"reached the maximum for this stat.")
+		alignSmallMsg(eventPlayer,mammonLure if eventPlayer.stats[eventPlayer.detectedShop] < statHardCaps[eventPlayer.detectedShop] else "reached the limit for this stat.")
 		return
 
 	eventPlayer.cash -= statCosts[eventPlayer.detectedShop]
 	eventPlayer.stats[eventPlayer.detectedShop]++
 	eventPlayer.level++
 	playEffect(eventPlayer, DynamicEffect.GOOD_PICKUP_EFFECT, statColors[eventPlayer.detectedShop], statPos[eventPlayer.detectedShop] + Vector.UP, true)
-	wait(0.112)
+	wait(0.096)
 	if eventPlayer.detectedShop and eventPlayer.isHoldingButton(Button.PRIMARY_FIRE):
 		loop()
 	else:
@@ -235,8 +245,8 @@ rule "buy all":
 	@Event eachPlayer
 	@Condition eventPlayer.isInSpawnRoom()
 	@Condition eventPlayer.detectedShop != -1
-	@Condition eventPlayer.isHoldingButton(Button.SECONDARY_FIRE)
-	@Condition not eventPlayer.isHoldingButton(Button.PRIMARY_FIRE)
+	@Condition eventPlayer.isHoldingButton(buyAllBind)
+	@Condition not eventPlayer.isHoldingButton(buy1Bind)
 	eventPlayer.collide_i = min(eventPlayer.statCaps[eventPlayer.detectedShop] - eventPlayer.stats[eventPlayer.detectedShop],\
 		floor(eventPlayer.cash / statCosts[eventPlayer.detectedShop]))
 
@@ -246,6 +256,8 @@ rule "buy all":
 	playEffect(eventPlayer, DynamicEffect.BUFF_EXPLOSION_SOUND, statColors[eventPlayer.detectedShop], eventPlayer, 50)
 	playEffect(eventPlayer, DynamicEffect.GOOD_EXPLOSION, statColors[eventPlayer.detectedShop], statPos[eventPlayer.detectedShop] + Vector.UP, true)
 
+	if eventPlayer.stats[eventPlayer.detectedShop] == eventPlayer.statCaps[eventPlayer.detectedShop]:
+		alignSmallMsg(eventPlayer, mammonLure if eventPlayer.stats[eventPlayer.detectedShop] < statHardCaps[eventPlayer.detectedShop] else "reached the limit for this stat.")
 	setStats()
 	wait(0.24)
 
@@ -280,17 +292,17 @@ rule "blood chalice":
 
 rule "gold loop":
 	goldPlayers = [x for x in getRealPlayersInRadius(goldPos, goldRadius, Team.ALL, LosCheck.OFF) if not x.sins[SINS.ENVY]]
+	alignSmallMsg(goldPlayers, f"dug up {MoneyMult(localPlayer) * goldMined} gold")
 	for gold_i in range(len(goldPlayers)):
 		goldPlayers[gold_i].cash += MoneyMult(goldPlayers[gold_i]) * goldMined
 		if goldPlayers[gold_i].questType == QUEST.GOLD:
 			goldPlayers[gold_i].questProg += MoneyMult(goldPlayers[gold_i]) * goldMined
-			smallMessage(eventPlayer, f"dug up {MoneyMult(goldPlayers[gold_i]) * goldMined} gold")
 	playEffect(goldPlayers, DynamicEffect.BAD_PICKUP_EFFECT, Color.YELLOW, goldPos, 3)
 	playEffect(goldPlayers, DynamicEffect.GOOD_PICKUP_EFFECT, Color.YELLOW, goldPos, 30)
 	wait(5)
 	loop()
 # interacts
-rule "outside spawn: oath, sin":
+rule "outside spawn: oath, sin, ritual":
 	@Event eachPlayer
 	@Condition eventPlayer.isAlive()
 	@Condition eventPlayer.isHoldingButton(Button.INTERACT)
@@ -311,29 +323,28 @@ rule "outside spawn: oath, sin":
 			else:
 				switch eventPlayer.interact_i:
 					case OATH.SUMMER:
-						if eventPlayer.stats[STATS.DMG] < 300:
+						if eventPlayer.stats[STATS.DMG] < SummerReq:
 							alignSmallMsg(eventPlayer, "you need more damage to be worthy of the summer's radiance.")
 							goto lbl_0
 						break
 					case OATH.AUTUMN:
-						if eventPlayer.stats[STATS.SPEED] < 150:
+						if eventPlayer.stats[STATS.SPEED] < AutumnReq:
 							alignSmallMsg(eventPlayer, "you need more speed to be worthy of the autumn breeze.")
 							goto lbl_0
 						break
 					case OATH.WINTER:
-						if eventPlayer.stats[STATS.HP] < 300:
+						if eventPlayer.stats[STATS.HP] < WinterReq:
 							alignSmallMsg(eventPlayer, "you need more health to be worthy of the winter's chill.")
 							goto lbl_0
 						break
 					case OATH.SPRING:
-						if eventPlayer.stats[STATS.HEAL] < 250:
+						if eventPlayer.stats[STATS.HEAL] < SpringReq:
 							alignSmallMsg(eventPlayer, "you need more healing received to be worthy of the spring's bounty.")
 							goto lbl_0
 						break
-				alignSmallMsg(eventPlayer, f"{'swore' if eventPlayer.oath == OATH.NONE else 'switched to'} the oath of {oathNames[eventPlayer.interact_i]}.")
+				alignSmallMsg(eventPlayer, f"swore the oath of {oathNames[eventPlayer.interact_i]}.")
 				eventPlayer.oath = eventPlayer.interact_i
 
-			eventPlayer.oath = eventPlayer.interact_i
 			lbl_0:
 			setStats()
 			break
@@ -347,7 +358,7 @@ rule "shop detection":
 		if distance(eventPlayer.getPosition(), statPos[eventPlayer.interact_i]) < 0.85:
 			eventPlayer.detectedShop = eventPlayer.interact_i
 			goto lbl_0
-		wait(0.032)
+		wait()
 
 	eventPlayer.detectedShop = -1
 
@@ -362,18 +373,23 @@ rule "in a spawn":
 	@Condition eventPlayer.isInSpawnRoom()
 	eventPlayer.setDamageDealt(0)
 	eventPlayer.setMoveSpeed(200)
+
+	if eventPlayer.pkExpiry > getTotalTimeElapsed():
+		alignSmallMsg(eventPlayer, f"{barista} no murderers allowed in the tavern!")
+		eventPlayer.applyImpulse(directionTowards(townPos, eventPlayer.getEyePosition()), 20, Relativity.TO_WORLD)
+		damage(eventPlayer,null,eventPlayer.getMaxHealth() * 0.4)
+		if ruleCondition:
+			loop()
+
 	if distance(eventPlayer.getPosition(), townPos) < 20:
-		if eventPlayer.pkExpiry > getTotalTimeElapsed():
-			alignSmallMsg(eventPlayer, f"{barista} no murderers allowed in the tavern!")
-			eventPlayer.applyImpulse(directionTowards(townPos, eventPlayer.getEyePosition()), 20, Relativity.TO_WORLD)
-			return
 		bigMessage(eventPlayer, "welcome to the tavern! (safe zone)")
 		eventPlayer.setStatusEffect(null, Status.PHASED_OUT, 99999)
 
 	waitUntil(not eventPlayer.isInSpawnRoom(), 99999)
 	bigMessage(eventPlayer, "entered the ruins (pvp enabled)")
-	setStats()
+	wait(0.24, Wait.RESTART_WHEN_TRUE)
 	heal(eventPlayer, null, eventPlayer.getMaxHealth())
+	setStats()
 	eventPlayer.clearStatusEffect(Status.PHASED_OUT)
 
 rule "phase":
@@ -396,7 +412,8 @@ rule "phase":
 rule "reroll quest":
 	@Event eachPlayer
 	@Condition eventPlayer.isInSpawnRoom()
-	@Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE)
+	@Condition eventPlayer.isHoldingButton(Button.INTERACT)
+	@Condition eventPlayer.detectedShop == -1
 	@Condition distance(eventPlayer.getPosition(), questPos) < questRad
 	if getTotalTimeElapsed() > eventPlayer.questRerollLock:
 		rerollQuest()
@@ -418,6 +435,7 @@ rule "bounty gone":
 	@Event eachPlayer
 	@Condition eventPlayer.questType == QUEST.BOUNTY
 	@Condition not entityExists(eventPlayer.questGoal)
+	wait(0.48, Wait.ABORT_WHEN_FALSE)
 	alignSmallMsg(eventPlayer, "your bounty left the match. rerolling quest.")
 	rerollQuest()
 
@@ -429,7 +447,11 @@ rule "sombruh":
 	eventPlayer.setDamageDealt(100)
 	wait(0.8)
 	setStats()
-
+# damage procs
+rule "dmg quest":
+	@Event playerDealtDamage
+	@Condition eventPlayer.questType == QUEST.DAMAGE
+	eventPlayer.questProg += eventDamage
 ### world clock stuff
 rule "interest":
 	@Event eachPlayer
@@ -439,6 +461,22 @@ rule "interest":
 # kills
 rule "kill":
 	@Event playerDealtFinalBlow
+	# steal
+	eventPlayer.cash += floor(victim.cash * 0.1)
+	alignSmallMsg(eventPlayer, f"stole {floor(victim.cash * 0.1)} gold from victim")
+	alignSmallMsg(victim, f"killer looted {floor(victim.cash * 0.1)} gold from you")
+	victim.cash = ceil(victim.cash * 0.9)
+
+	# pk reward. penalty handled in death rule
+	if victim.pkExpiry > getTotalTimeElapsed():
+		eventPlayer.cash += victim.pkBounty
+		victim.cash -= victim.pkBounty
+		alignSmallMsg(eventPlayer, f"stole {floor(victim.cash * 0.1)} gold from victim")
+		alignSmallMsg(victim, f"killer looted {floor(victim.cash * 0.1)} gold from you")
+
+	if victim.pkExpiry > getTotalTimeElapsed() and eventPlayer.questGoal != victim:
+		eventPlayer.pkBounty += round(20 * MoneyMult(eventPlayer))
+		eventPlayer.pkExpiry = getTotalTimeElapsed() + (60 if eventPlayer.oath == OATH.SPRING else 30)
 
 	# quest
 	if eventPlayer.questType == QUEST.KILL:
@@ -451,20 +489,14 @@ rule "kill":
 		alignSmallMsg(eventPlayer, f"you killed a player hunting you. + {20*MoneyMult(eventPlayer)} gold")
 		eventPlayer.cash += 20*MoneyMult(eventPlayer)
 
-	# steal
-
-	# pk
-	if victim.pkBounty > 0:
-		eventPlayer.cash += victim.pkBounty
-
-	eventPlayer.pkBounty += round(20 * MoneyMult(eventPlayer))
-	eventPlayer.pkExpiry = getTotalTimeElapsed() + (60 if eventPlayer.oath == OATH.SPRING else 30)
+	victim.lastKiller = eventPlayer
 
 rule "ded":
 	@Event playerDied
-	if eventPlayer.pkBounty > 0:
+	wait()
+	if victim.pkExpiry > getTotalTimeElapsed():
 		eventPlayer.cash -= eventPlayer.pkBounty
-		alignSmallMsg(eventPlayer, "murderer penalty: -{} gold".format(eventPlayer.pkBounty))
+		alignSmallMsg(eventPlayer, "died as a murderer. penalty: -{} gold".format(eventPlayer.pkBounty))
 	eventPlayer.pkBounty = 0
 	eventPlayer.pkExpiry = 0
 
@@ -476,6 +508,12 @@ rule "respawn in tavern":
 	wait()
 	eventPlayer.teleport(townPos)
 # events
+# shrine effects
+rule "shrine persistent":
+	shrineOwners[SHRINES.ULT].setUltCharge(shrineOwners[SHRINES.ULT].getUltCharge() + 6)
+	shrineOwners[SHRINES.GREED].stats[STATS.INCOME] = min(shrineOwners[SHRINES.GREED].stats[STATS.INCOME] + 30, shrineOwners[SHRINES.GREED].statCaps[STATS.INCOME])
+	wait(3)
+	loop()
 # misc
 rule "anti crash on":
     @Condition not antiCrashOn

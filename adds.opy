@@ -28,6 +28,6 @@ rule "autumn":
 	@Condition eventPlayer.oath == OATH.AUTUMN
 	@Condition eventPlayer.isJumping()
 	eventPlayer.setJumpVerticalSpeed(100)
-	wait(7)
+	wait(AutumnCd)
 	if eventPlayer.oath == OATH.AUTUMN:
 		eventPlayer.setJumpVerticalSpeed(800)
