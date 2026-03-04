@@ -72,7 +72,44 @@ def setStats():
 		eventPlayer.setDamageReceived(130)
 
 def rerollQuest():
-	pass
+	eventPlayer.questProg = 0
+
+	if eventPlayer.guild == GUILD.MERC:
+		if getNumberOfPlayers(Team.ALL) < 2:
+			alignSmallMsg(eventPlayer, "failed to get bounty quest: no other players in the lobby.")
+			alignSmallMsg(eventPlayer, "you can change your guild in the tavern for a different quest.")
+		else:
+			eventPlayer.questType = QUEST.BOUNTY
+	elif eventPlayer.guild == GUILD.FARM:
+		alignSmallMsg(eventPlayer, "you're a forager and can't receive quests.")
+		alignSmallMsg(eventPlayer, "you can change your guild in the tavern for quests.")
+	else:
+		# no altar if player can't access, no pvp if no other players
+		eventPlayer.questType = random.randint(QUEST.KILL if getNumberOfPlayers(Team.ALL) > 1 else QUEST.BLOOD, QUEST.ALTAR if eventPlayer.level >= 300 else QUEST.ALTAR - 1)
+
+	switch eventPlayer.questType:
+		case QUEST.KILL:
+			eventPlayer.questGoal = random.randint(2, 7)
+			break
+		case QUEST.BOUNTY:
+			eventPlayer.questGoal = random.choice(getPlayers(Team.ALL).exclude(eventPlayer))
+			break
+		case QUEST.DAMAGE:
+    		eventPlayer.questGoal = random.randint(500, 2500)
+			break
+		case QUEST.BLOOD:
+			eventPlayer.questGoal = random.randint(eventPlayer.getMaxHealth() * 1.5, eventPlayer.getMaxHealth() * 2)
+			break
+		case QUEST.GOLD:
+			eventPlayer.questGoal = random.randint(10, 75) * MoneyMult(eventPlayer)
+			break
+		case QUEST.ALTAR:
+			eventPlayer.questGoal = 1
+			break
+
+	eventPlayer.questRerollLock = getTotalTimeElapsed() + (0.5 if eventPlayer.guild == GUILD.ROLLER else 5)
+	playEffect(eventPlayer, DynamicEffect.GOOD_PICKUP_EFFECT, Color.ORANGE, questPos, 2)
+	playEffect(eventPlayer, DynamicEffect.BUFF_IMPACT_SOUND, Color.ORANGE, eventPlayer, 30)
 
 rule "init":
 	if isAssemblingHeroes():
@@ -86,18 +123,34 @@ rule "init":
 	hudText(localPlayer, iconString(Icon.EYE), "eye position", localPlayer.getEyePosition(), HudPosition.ACTUALLY_LEFT, 6969, Color.SKY_BLUE, Color.SKY_BLUE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
 	hudText(localPlayer, abilityIconString(Hero.HAMMOND, Button.CROUCH), "player position", localPlayer.getPosition(), HudPosition.ACTUALLY_LEFT, 6969, Color.LIME_GREEN, Color.LIME_GREEN, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
 	hudText(localPlayer, abilityIconString(Hero.WIDOWMAKER, Button.ULTIMATE), "facing direction", localPlayer.getFacingDirection(), HudPosition.ACTUALLY_LEFT, 6969, Color.RED, Color.RED, Color.WHITE, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.DEFAULT)
+    hudText(hostPlayer, null,  "peak: {} | average: {}".format(getPeakServerLoad(), getAverageServerLoad()), "server load: {}".format(getServerLoad()), HudPosition.RIGHT, -1, Color.ORANGE, Color.GRAY, Color.GRAY, HudReeval.VISIBILITY_AND_STRING, SpecVisibility.ALWAYS)
+
+	wait(10)
+	createDummy(Hero.ROADHOG, Team.ALL, -1, nearestWalkablePosition(Vector.UP), Vector.UP)
 
 rule "visuals":
 	### player
-	hudText(getAllPlayers(), heroIcon(localPlayer.getHero()), f"level {localPlayer.level}", "{localPlayer.cash} gold", HudPosition.ACTUALLY_LEFT, -1, Color.TEAM_1, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING)
+	hudText(getAllPlayers(), heroIcon(localPlayer.getHero()) if localPlayer.oath == OATH.NONE else oathIcons[localPlayer.oath], f"level {localPlayer.level}", f"{localPlayer.cash} gold", HudPosition.ACTUALLY_LEFT, -1, Color.BLUE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING)
 
 	progressBarHud(localPlayer, 100 * localPlayer.questProg / localPlayer.questGoal,
         "get a quest in the tavern" if localPlayer.questType == QUEST.NONE
-        else " {}{}\&fullwidth_space;\&fullwidth_space;\&fullwidth_space;\&fullwidth_space;reward: {} gold".format(questText[localPlayer.questType], b"{} / {} ".format(localPlayer.questProg, localPlayer.questGoal) if localPlayer.questType in NumQuests else b"{} ".format(localPlayer.questGoal), questReward(localPlayer)), HudPosition.TOP, 1, Color.GRAY if localPlayer.questType == -1 else Color.ORANGE, Color.GRAY if localPlayer.questType == -1 else Color.ORANGE, ProgressHudReeval.VISIBILITY_VALUES_AND_COLOR, SpecVisibility.DEFAULT)
+        else "{} {}\&fullwidth_space;\&fullwidth_space;reward: {} gold".format(questText[localPlayer.questType], "{} / {}".format(localPlayer.questProg, localPlayer.questGoal) if localPlayer.questType in NumQuests else "{}".format(localPlayer.questGoal), questReward(localPlayer)), HudPosition.TOP, 1, Color.GRAY if localPlayer.questType == -1 else Color.ORANGE, Color.GRAY if localPlayer.questType == -1 else Color.ORANGE, ProgressHudReeval.VISIBILITY_VALUES_AND_COLOR, SpecVisibility.DEFAULT)
+
+	createInWorldText(localPlayer if localPlayer.detectedShop != -1 else null, f"{localPlayer.stats[localPlayer.detectedShop]} / {localPlayer.statCaps[localPlayer.detectedShop]}% {statNames[localPlayer.detectedShop]}", updateEveryFrame(localPlayer.getEyePosition() + localPlayer.getFacingDirection() * 999 + Vector.UP * 99), 1.3, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, statColors[localPlayer.detectedShop])
+	createInWorldText(localPlayer if localPlayer.detectedShop != -1 else null, f"{buttonToString(Button.PRIMARY_FIRE)} buy\n{buttonToString(Button.SECONDARY_FIRE)} buy maximum", updateEveryFrame(localPlayer.getEyePosition() + localPlayer.getFacingDirection() * 999), 1.3, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE)
 
 	### world
+	# quests
+	createEffect(getAllPlayers(), Effect.GOOD_AURA, Color.ORANGE, questPos, 2, EffectReeval.VISIBILITY)
+	createInWorldText(getAllPlayers(), barista, questPos, 3, Clip.SURFACES, WorldTextReeval.VISIBILITY)
+	createInWorldText(getAllPlayers(), f"{buttonToString(Button.PRIMARY_FIRE)} get a quest" if localPlayer.questRerollLock-1 < getTotalTimeElapsed() else f"reroll cooldown: {localPlayer.questRerollLock-1 - getTotalTimeElapsed()}s", questPos + Vector.UP, 1.2, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING)
 	# gold
 	createEffect(getAllPlayers(), Effect.RING, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
+	createEffect(getAllPlayers(), Effect.SPARKLES, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
+	createEffect(getAllPlayers(), Effect.SPARKLES_SOUND, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
+	createInWorldText(getAllPlayers(), "gold mine", goldPos + Vector.UP * 3, 2, Clip.SURFACES, WorldTextReeval.VISIBILITY)
+	createInWorldText(getAllPlayers(), f"{goldMined} gold /5s, split among miners", questPos, 2, Clip.SURFACES, WorldTextReeval.VISIBILITY)
+
 	# bloods
 	for i in range(len(bloodPos)):
 		createEffect(getAllPlayers(), Effect.RING, Color.RED, bloodPos[i], bloodRad, EffectReeval.VISIBILITY)
@@ -105,7 +158,7 @@ rule "visuals":
 		createEffect(getAllPlayers(), Effect.ORB, Color.RED, bloodOrb(evalOnce(bloodPos[i])), true, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
 
 		createInWorldText(getAllPlayers(), "blood chalice", bloodPos[i] + Vector.UP * 2.5, 2.5, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.RED)
-		createInWorldText(getAllPlayers(), f"{bloodDrain[i] * 100}% max hp /s \&right_arrow; {bloodReturn[i]}x sacrifice as gold", bloodPos[i] + Vector.UP * 1.6, 1, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.WHITE)
+		createInWorldText(getAllPlayers(), f"{bloodDrain[i] * 100}% max hp /s \&right_arrow; {bloodReturn[i]}x sacrifice as gold\nunaffected by income stat", bloodPos[i] + Vector.UP * 1.6, 1, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.WHITE)
 		wait()
 
 	# stats
@@ -116,9 +169,9 @@ rule "visuals":
 
 		# hud
 		if statHardCaps[i] == 1:
-			hudSubheader(localPlayer if localPlayer.stats[evalOnce(i)] else null, statNames[i], HudPosition.ACTUALLY_LEFT, i, Color.SKY_BLUE, HudReeval.VISIBILITY_AND_STRING)
+			hudSubheader(localPlayer if localPlayer.stats[evalOnce(i)] else null, statNames[i], HudPosition.ACTUALLY_LEFT, i, Color.SKY_BLUE, HudReeval.VISIBILITY)
 		else:
-			hudSubheader(localPlayer, f"{statNames[i]}: {localPlayer.stats[i]}%", HudPosition.ACTUALLY_LEFT, i, Color.SKY_BLUE, HudReeval.VISIBILITY_AND_STRING)
+			hudSubheader(localPlayer, f"{evalOnce(statNames[i])}: {localPlayer.stats[evalOnce(i)]}%", HudPosition.ACTUALLY_LEFT, i, Color.SKY_BLUE, HudReeval.VISIBILITY_AND_STRING)
 
 		wait()
 	# oaths
@@ -127,7 +180,7 @@ rule "visuals":
 		createEffect(getAllPlayers(), Effect.SPARKLES, oathColors[i], oathPos[i], 1.5, EffectReeval.VISIBILITY)
 		createInWorldText(getAllPlayers(), oathIcons[i], oathPos[i]+Vector.UP * 3, 2, Clip.SURFACES, WorldTextReeval.VISIBILITY, oathColors[i])
 		createInWorldText(getAllPlayers(), f"oath of {oathNames[i]}", oathPos[i]+Vector.UP * 2, 2.6, Clip.SURFACES, WorldTextReeval.VISIBILITY, oathColors[i])
-		createInWorldText(getAllPlayers(), inspectPrompt if localPlayer.isHoldingButton(Button.CROUCH) == false else f"{evalOnce(oathDescs[i])}\n\n{buttonToString(Button.INTERACT)} pledge", oathPos[i]+Vector.UP, 1, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING, Color.WHITE)
+		createInWorldText(getAllPlayers(), inspectPrompt if localPlayer.isHoldingButton(Button.CROUCH) == false else f"{evalOnce(oathDescs[i])}{buttonToString(Button.INTERACT)} pledge", oathPos[i]+Vector.UP, 1, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING, Color.WHITE)
 		wait()
 	# sins
 
@@ -144,18 +197,58 @@ rule "player init":
 	eventPlayer.setAllowedHeroes(getAllHeroes())
 	wait()
 	eventPlayer.stats = startStats
+	eventPlayer.statCaps = startStatCaps
 	eventPlayer.cash = startingGold
+	eventPlayer.oath = OATH.NONE
+	eventPlayer.sins = [false for x in SINS.toArray()]
 	setStats()
 
 	wait()
 	# blood orb
-	createBeam(getAllPlayers() if eventPlayer.currentChalice != -1 else null, Beam.BAD, eventPlayer, bloodOrb(bloodPos[eventPlayer.currentChalice]), Color.RED, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
+	createBeam(getAllPlayers() if eventPlayer.currentChalice != -1 and eventPlayer.isAlive() else null, Beam.BAD, eventPlayer, bloodOrb(bloodPos[eventPlayer.currentChalice]), Color.RED, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
 ### player interactions
 # shopping/banking
-rule "buy":
+rule "buy 1":
 	@Event eachPlayer
 	@Condition eventPlayer.isInSpawnRoom()
 	@Condition eventPlayer.detectedShop != -1
+	@Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE)
+	if eventPlayer.cash < statCosts[eventPlayer.detectedShop]:
+		alignSmallMsg(eventPlayer, "out of gold")
+		return
+	if eventPlayer.stats[eventPlayer.detectedShop] >= eventPlayer.statCaps[eventPlayer.detectedShop]:
+		alignSmallMsg(eventPlayer,"reached the maximum for this stat.")
+		return
+
+	eventPlayer.cash -= statCosts[eventPlayer.detectedShop]
+	eventPlayer.stats[eventPlayer.detectedShop]++
+	eventPlayer.level++
+	playEffect(eventPlayer, DynamicEffect.GOOD_PICKUP_EFFECT, statColors[eventPlayer.detectedShop], statPos[eventPlayer.detectedShop] + Vector.UP, true)
+	wait(0.112)
+	if eventPlayer.detectedShop and eventPlayer.isHoldingButton(Button.PRIMARY_FIRE):
+		loop()
+	else:
+		playEffect(eventPlayer, DynamicEffect.BUFF_IMPACT_SOUND, statColors[eventPlayer.detectedShop], eventPlayer, 30)
+		setStats()
+
+rule "buy all":
+	@Event eachPlayer
+	@Condition eventPlayer.isInSpawnRoom()
+	@Condition eventPlayer.detectedShop != -1
+	@Condition eventPlayer.isHoldingButton(Button.SECONDARY_FIRE)
+	@Condition not eventPlayer.isHoldingButton(Button.PRIMARY_FIRE)
+	eventPlayer.collide_i = min(eventPlayer.statCaps[eventPlayer.detectedShop] - eventPlayer.stats[eventPlayer.detectedShop],\
+		floor(eventPlayer.cash / statCosts[eventPlayer.detectedShop]))
+
+	eventPlayer.stats[eventPlayer.detectedShop] += eventPlayer.collide_i
+	eventPlayer.cash -= eventPlayer.collide_i * statCosts[eventPlayer.detectedShop]
+	eventPlayer.level += eventPlayer.collide_i
+	playEffect(eventPlayer, DynamicEffect.BUFF_EXPLOSION_SOUND, statColors[eventPlayer.detectedShop], eventPlayer, 50)
+	playEffect(eventPlayer, DynamicEffect.GOOD_EXPLOSION, statColors[eventPlayer.detectedShop], statPos[eventPlayer.detectedShop] + Vector.UP, true)
+
+	setStats()
+	wait(0.24)
+
 # mines
 macro bloodDelay = 0.48
 rule "blood chalice":
@@ -174,9 +267,9 @@ rule "blood chalice":
 				break
 
 	if eventPlayer.currentChalice != -1:
-		eventPlayer.bloodscan_i = bloodDrain[eventPlayer.currentChalice] * eventPlayer.getMaxHealth() * bloodDelay
-		damage(eventPlayer, eventPlayer, eventPlayer.bloodscan_i)
-		eventPlayer.cash += eventPlayer.bloodscan_i * MoneyMult(eventPlayer) * (0.5 if eventPlayer.sins[SINS.LUST] else 1)
+		eventPlayer.bloodscan_i = round(bloodDrain[eventPlayer.currentChalice] * eventPlayer.getMaxHealth() * bloodDelay)
+		damage(eventPlayer, null, eventPlayer.bloodscan_i)
+		eventPlayer.cash += eventPlayer.bloodscan_i * (0.5 if eventPlayer.sins[SINS.LUST] else 1) * (foragerMult if eventPlayer.guild == GUILD.FARM else 1)
 
 		if eventPlayer.questType == QUEST.BLOOD:
 			eventPlayer.questProg += eventPlayer.bloodscan_i
@@ -188,9 +281,12 @@ rule "blood chalice":
 rule "gold loop":
 	goldPlayers = [x for x in getRealPlayersInRadius(goldPos, goldRadius, Team.ALL, LosCheck.OFF) if not x.sins[SINS.ENVY]]
 	for gold_i in range(len(goldPlayers)):
-		goldPlayers[gold_i].cash += MoneyMult(goldPlayers[gold_i]) * 25
+		goldPlayers[gold_i].cash += MoneyMult(goldPlayers[gold_i]) * goldMined
 		if goldPlayers[gold_i].questType == QUEST.GOLD:
-			goldPlayers[gold_i].questProg += MoneyMult(goldPlayers[gold_i]) * 25
+			goldPlayers[gold_i].questProg += MoneyMult(goldPlayers[gold_i]) * goldMined
+			smallMessage(eventPlayer, f"dug up {MoneyMult(goldPlayers[gold_i]) * goldMined} gold")
+	playEffect(goldPlayers, DynamicEffect.BAD_PICKUP_EFFECT, Color.YELLOW, goldPos, 3)
+	playEffect(goldPlayers, DynamicEffect.GOOD_PICKUP_EFFECT, Color.YELLOW, goldPos, 30)
 	wait(5)
 	loop()
 # interacts
@@ -207,9 +303,11 @@ rule "outside spawn: oath, sin":
 
 			if eventPlayer.sins[SINS.PRIDE]:
 				alignSmallMsg(eventPlayer, "your pride bellows from inside your heart: the avatars of the seasons are beneath you.")
+				goto lbl_0
 			elif eventPlayer.oath == eventPlayer.interact_i:
-				alignSmallMsg(eventPlayer, f"forswore the oath of {oathNames[eventPlayer.oath]}.")
+				alignSmallMsg(eventPlayer, f"abandoned your oath.")
 				eventPlayer.oath = OATH.NONE
+				goto lbl_0
 			else:
 				switch eventPlayer.interact_i:
 					case OATH.SUMMER:
@@ -218,7 +316,7 @@ rule "outside spawn: oath, sin":
 							goto lbl_0
 						break
 					case OATH.AUTUMN:
-						if eventPlayer.stats[STATS.SPEED] < 200:
+						if eventPlayer.stats[STATS.SPEED] < 150:
 							alignSmallMsg(eventPlayer, "you need more speed to be worthy of the autumn breeze.")
 							goto lbl_0
 						break
@@ -238,7 +336,6 @@ rule "outside spawn: oath, sin":
 			eventPlayer.oath = eventPlayer.interact_i
 			lbl_0:
 			setStats()
-
 			break
 	wait(0.48)
 
@@ -250,10 +347,12 @@ rule "shop detection":
 		if distance(eventPlayer.getPosition(), statPos[eventPlayer.interact_i]) < 0.85:
 			eventPlayer.detectedShop = eventPlayer.interact_i
 			goto lbl_0
+		wait(0.032)
+
 	eventPlayer.detectedShop = -1
 
 	lbl_0:
-	wait(0.36)
+	wait(0.08)
 	if ruleCondition:
 		loop()
 # zones
@@ -264,22 +363,28 @@ rule "in a spawn":
 	eventPlayer.setDamageDealt(0)
 	eventPlayer.setMoveSpeed(200)
 	if distance(eventPlayer.getPosition(), townPos) < 20:
+		if eventPlayer.pkExpiry > getTotalTimeElapsed():
+			alignSmallMsg(eventPlayer, f"{barista} no murderers allowed in the tavern!")
+			eventPlayer.applyImpulse(directionTowards(townPos, eventPlayer.getEyePosition()), 20, Relativity.TO_WORLD)
+			return
 		bigMessage(eventPlayer, "welcome to the tavern! (safe zone)")
+		eventPlayer.setStatusEffect(null, Status.PHASED_OUT, 99999)
 
 	waitUntil(not eventPlayer.isInSpawnRoom(), 99999)
 	bigMessage(eventPlayer, "entered the ruins (pvp enabled)")
 	setStats()
-	wait(0.24, Wait.RESTART_WHEN_TRUE)
-	heal(eventPlayer, null, 70)
+	heal(eventPlayer, null, eventPlayer.getMaxHealth())
+	eventPlayer.clearStatusEffect(Status.PHASED_OUT)
 
 rule "phase":
 	@Event eachPlayer
 	@Condition eventPlayer.isAlive()
 	@Condition not eventPlayer.isInSpawnRoom()
 	if distance(eventPlayer.getPosition(), phasePos[eventPlayer.collide_i]) < phaseRadii[eventPlayer.collide_i]:
-		eventPlayer.disableEnvironmentCollision(false)
-		waitUntil(distance(eventPlayer.getPosition(), phasePos[eventPlayer.collide_i]) > phaseRadii[eventPlayer.collide_i] or eventPlayer.getPosition().y < phasePos[eventPlayer.collide_i].y - 0.5, 5)
-		eventPlayer.enableEnvironmentCollision()
+		if true or eventPlayer.level >= phaseLevels[eventPlayer.collide_i]: # DEBUG
+			eventPlayer.disableEnvironmentCollision(false)
+			waitUntil(distance(eventPlayer.getPosition(), phasePos[eventPlayer.collide_i]) > phaseRadii[eventPlayer.collide_i] or eventPlayer.getPosition().y < phasePos[eventPlayer.collide_i].y - 0.5, 5)
+			eventPlayer.enableEnvironmentCollision()
 	wait(0.048)
 	eventPlayer.collide_i += 1
 	if eventPlayer.collide_i > len(phasePos):
@@ -291,12 +396,21 @@ rule "phase":
 rule "reroll quest":
 	@Event eachPlayer
 	@Condition eventPlayer.isInSpawnRoom()
-	@Condition eventPlayer.isHoldingButton(Button.INTERACT)
+	@Condition eventPlayer.isHoldingButton(Button.PRIMARY_FIRE)
+	@Condition distance(eventPlayer.getPosition(), questPos) < questRad
+	if getTotalTimeElapsed() > eventPlayer.questRerollLock:
+		rerollQuest()
+		if eventPlayer.questType != QUEST.NONE:
+			alignSmallMsg(eventPlayer, f"{barista} {random.choice(questQuips[eventPlayer.questType])}")
+	else:
+		alignSmallMsg(eventPlayer, f"{iconString(Icon.CROSS)} reroll on cooldown")
 
 rule "quest complete":
 	@Event eachPlayer
 	@Condition eventPlayer.questProg >= eventPlayer.questGoal
+	smallMessage(eventPlayer, f"{barista} good job! quest reward: {questReward(eventPlayer)} gold")
 	eventPlayer.cash += questReward(eventPlayer)
+	wait()
 	eventPlayer.questType = QUEST.NONE
 	eventPlayer.questProg = 0
 
@@ -344,7 +458,7 @@ rule "kill":
 		eventPlayer.cash += victim.pkBounty
 
 	eventPlayer.pkBounty += round(20 * MoneyMult(eventPlayer))
-	eventPlayer.pkTimer = 30
+	eventPlayer.pkExpiry = getTotalTimeElapsed() + (60 if eventPlayer.oath == OATH.SPRING else 30)
 
 rule "ded":
 	@Event playerDied
@@ -352,12 +466,13 @@ rule "ded":
 		eventPlayer.cash -= eventPlayer.pkBounty
 		alignSmallMsg(eventPlayer, "murderer penalty: -{} gold".format(eventPlayer.pkBounty))
 	eventPlayer.pkBounty = 0
-	eventPlayer.pkTimer = 0
+	eventPlayer.pkExpiry = 0
 
 rule "respawn in tavern":
 	@Event eachPlayer
 	@Condition eventPlayer.hasSpawned()
 	@Condition eventPlayer.isAlive()
+	@Condition not eventPlayer.isDummy()
 	wait()
 	eventPlayer.teleport(townPos)
 # events

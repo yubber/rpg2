@@ -3,7 +3,7 @@
 rule "spring":
 	@Event eachPlayer
 	@Condition eventPlayer.oath == OATH.SPRING
-	@Condition eventPlayer.pkTimer <= 0
+	@Condition eventPlayer.pkExpiry < getTotalTimeElapsed()
 	heal(eventPlayer, null, 10/0.64)
 	wait(0.64)
 	if ruleCondition:
@@ -27,6 +27,7 @@ rule "autumn":
 	@Event eachPlayer
 	@Condition eventPlayer.oath == OATH.AUTUMN
 	@Condition eventPlayer.isJumping()
-	eventPlayer.setJumpEnabled(false)
+	eventPlayer.setJumpVerticalSpeed(100)
 	wait(7)
-	eventPlayer.setJumpEnabled(true)
+	if eventPlayer.oath == OATH.AUTUMN:
+		eventPlayer.setJumpVerticalSpeed(800)
