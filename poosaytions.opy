@@ -1,15 +1,19 @@
 #!mainFile "main.opy"
 
-macro townPos = vect(-14.5, 3, 13.4)
+globalvar townPos = vect(-14.5, 3, 13.4)
 
-macro goldPos = vect(24.73, 4.8, -55)
+globalvar goldPos = vect(24.73, 4.8, -55)
 macro goldRadius = 6
 
-macro questPos = vect(-13, 2.8, 0.28)
+globalvar questPos = vect(-13, 2.8, 0.28)
 macro questRad = 3
 
-macro depositPos = vect(-13.38, 1, 19.8)
-macro withdrawPos = vect(-17.15, 1, 19.77)
+macro bankPos = [vect(-13.49, 1, 20.26), vect(-17.28, 1, 20)]
+globalvar depositPos = bankPos[0]
+globalvar withdrawPos = bankPos.last()
+macro bankRad = 1.3
+
+globalvar altarPos = vect(88.38, 14, -97.17)
 
 # shady candy
 # mine2
@@ -24,15 +28,10 @@ globalvar brawlRadii = [9]
 macro darkPos = vect(88.15, 12.67, -67.38)
 macro darkRad = 3.4
 
-macro diamondPos = vect(1.74, 5, -97)
+globalvar diamondPos = vect(1.74, 5, -97)
 macro diamondRad = 4
 
-macro riskyPos = vect(67, 4.7, -83.5)
-macro riskyRad = 1
-
-macro mountainPos = vect(31.31, 14, -80.75)
-
-macro vengeancePos = vect(54.21, 10.7, -121.6)
+globalvar vengeancePos = vect(54.21, 10.7, -121.6)
 
 globalvar bloodPos = [vect(-3.58, 2, -37.9),vect(56.52, 21, -68.29)]
 globalvar bloodRad = [4,4.84]
@@ -46,3 +45,5 @@ macro foragePos = vect(19.9, 1, -4.4)
 macro forageRad = 5.6
 
 globalvar oathPos = [vect(53.11, 6.5, -60.8), vect(75, 10.5, -118.3), vect(60.3, 4.7, -94.5), vect(104, 12.7, -72.8)]
+
+globalvar shrinePos = [vect(31.31, 14, -80.75), vect(67, 4.7, -83.5), vect(32.53, 11.5, -62.8)]

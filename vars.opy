@@ -14,7 +14,7 @@ globalvar i
 # user facing * statmult = actual change
 globalvar statMults = [0.2,0.2,0.2,0.2,1,1]
 # 0.82
-globalvar statPos = [vect(-5.77, 1, 2.2), vect(-6.05, 1, 4.2), vect(-6.27, 1, 6.21), vect(-20.29, 1, 0.41), vect(-20.72, 1, 2.4), vect(-21.15, 1, 4.39), vect(-15.47, 1, 20.3)]
+globalvar statPos = [vect(-5.77, 1, 2.2), vect(-6.05, 1, 4.2), vect(-6.27, 1, 6.21), vect(-20.29, 1, 0.41), vect(-20.72, 1, 2.4), vect(-21.15, 1, 4.39), vect(-15.63, 1, 21.54)]
 globalvar statCosts = [25, 25, 25, 5, 100, 7, 1000, 5000000]
 
 globalvar goldPlayers
@@ -22,7 +22,7 @@ globalvar gold_i
 macro goldMined = 25
 
 macro startStats =  		[100,	100,	100,		100,	100,	100,	10,		0]
-macro statHardCaps =		[5000000,5000000,5000000,	500,	600,	5000000,100,	1]
+globalvar statHardCaps =		[5000000,5000000,5000000,	500,	600,	5000000,100,	1]
 macro rebirthCapIncrease = 	[30000, 30000, 30000, 		0,		0,		30000,	50,		0]
 macro startStatCaps =		[10000, 10000, 10000, 		500, 	600, 	10000,	100,	1]
 
@@ -66,7 +66,7 @@ playervar questProg
 playervar questType
 playervar questRerollLock
 
-macro questRewardScales = [30, 150, 0.06, 0.15, 2, 110]
+globalvar questRewardScales = [30, 150, 0.06, 0.15, 2, 110]
 macro questReward(Player):
 	round(questRewardScales[Player.questType]
 		* (Player.questGoal if Player.questType in NumQuests else 1)
@@ -79,8 +79,13 @@ playervar level
 playervar cash
 
 playervar bank
+macro sliderScalar(Player):
+	max(0, min(1, Player.getVerticalFacingAngle() / -60 + 0.5))
 
-playervar collide_i
+macro sliderLength = 1.5
+macro baseSliderPos = (localPlayer.getEyePosition() + 2 * normalize(localPlayer.getFacingDirection() * vect(1,0,1)) - (0.6 * Vector.UP))
+
+playervar collide_i # for phasing, shop buy calcs and bank txn calcs
 playervar interact_i # for oaths/sins and shop items
 playervar detectedShop
 
@@ -107,3 +112,6 @@ enum SHRINES:
 	GREED,
 	ULT
 globalvar shrineOwners = [null,null,null]
+globalvar shrineProgress = [0,0,0]
+globalvar shrine_i
+globalvar shrineTemp

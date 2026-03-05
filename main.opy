@@ -61,7 +61,7 @@ def setStats():
 	eventPlayer.setDamageDealt(eventPlayer.stats[STATS.DMG] * statMults[STATS.DMG] * (1.3 if eventPlayer.oath == OATH.SUMMER else 1))
 	eventPlayer.setMaxHealth(eventPlayer.stats[STATS.HP] * statMults[STATS.HP])
 	eventPlayer.setHealingReceived(eventPlayer.stats[STATS.HEAL] * statMults[STATS.HEAL])
-	eventPlayer.setMoveSpeed(eventPlayer.stats[STATS.SPEED] * statMults[STATS.SPEED])
+	eventPlayer.setMoveSpeed(200 if eventPlayer.isInSpawnRoom() else (eventPlayer.stats[STATS.SPEED] * statMults[STATS.SPEED]))
 	eventPlayer.setProjectileSpeed(eventPlayer.stats[STATS.PROJ] * statMults[STATS.PROJ])
 	eventPlayer.setDamageReceived(100)
 
@@ -143,6 +143,30 @@ rule "visuals":
 	createInWorldText(localPlayer if localPlayer.detectedShop != -1 else null, f"{buttonToString(buy1Bind)} buy\n{buttonToString(buyAllBind)} buy maximum", updateEveryFrame(localPlayer.getEyePosition() + localPlayer.getFacingDirection() * 999), 1.3, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE)
 
 	### world
+	# bank
+	createInWorldText(getAllPlayers(), "bank", statPos[STATS.INTEREST] + Vector.UP * 4, 3, Clip.SURFACES, WorldTextReeval.VISIBILITY, bankColor)
+	createInWorldText(getAllPlayers(), f"balance: {localPlayer.bank} gold", statPos[STATS.INTEREST] + Vector.UP * 3, 1.5, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING, bankColor)
+	for i in range(len(bankPos)):
+		# prompt
+		createInWorldText(getAllPlayers(), "deposit" if i == 0 else "withdraw", bankPos[i] + Vector.UP * 0.5, 2, Clip.SURFACES, WorldTextReeval.VISIBILITY, bankColor)
+		# ring
+		createEffect(getAllPlayers(), Effect.RING, bankColor, bankPos[i], bankRad, EffectReeval.VISIBILITY)
+		# slider
+		createBeam(localPlayer if distance(localPlayer.getPosition(), evalOnce(bankPos[i])) < bankRad else null, Beam.GRAPPLE, baseSliderPos, baseSliderPos + Vector.UP * sliderLength, bankColor, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
+		# thumb
+		createEffect(localPlayer if distance(localPlayer.getPosition(), evalOnce(bankPos[i])) < bankRad else null, Effect.SPHERE, bankColor,
+			baseSliderPos + Vector.UP * (sliderLength * sliderScalar(localPlayer)), 0.06, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
+		# 0
+		createInWorldText(localPlayer if distance(localPlayer.getPosition(), evalOnce(bankPos[i])) < bankRad else null, 0,
+			baseSliderPos - 0.2 * Vector.UP, 1.2, Clip.NONE, WorldTextReeval.VISIBILITY_AND_POSITION, Color.WHITE)
+		# max
+		createInWorldText(localPlayer if distance(localPlayer.getPosition(), evalOnce(bankPos[i])) < bankRad else null, localPlayer.cash if evalOnce(i == 0) else localPlayer.bank,
+			baseSliderPos + Vector.UP * (0.2 + sliderLength), 1.2, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE)
+		# current
+		createInWorldText(localPlayer if distance(localPlayer.getPosition(), evalOnce(bankPos[i])) < bankRad else null,
+			f"{floor(sliderScalar(localPlayer) * (localPlayer.cash if evalOnce(i == 0) else localPlayer.bank))} gold\n{buttonToString(Button.INTERACT)} {'deposit' if evalOnce(i == 0) else 'withdraw'}",
+			updateEveryFrame(baseSliderPos + Vector.UP * (sliderLength * sliderScalar(localPlayer) - 0.05)), 1.2, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_AND_STRING, Color.WHITE)
+
 	# quests
 	createEffect(getAllPlayers(), Effect.GOOD_AURA, Color.ORANGE, questPos, 2, EffectReeval.VISIBILITY)
 	createInWorldText(getAllPlayers(), barista, questPos, 3, Clip.SURFACES, WorldTextReeval.VISIBILITY)
@@ -151,7 +175,7 @@ rule "visuals":
 	createEffect(getAllPlayers(), Effect.RING, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
 	createEffect(getAllPlayers(), Effect.SPARKLES, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
 	createEffect(getAllPlayers(), Effect.SPARKLES_SOUND, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
-	createInWorldText(getAllPlayers(), "gold mine", goldPos + Vector.UP * 3, 2, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.YELLOW)
+	createInWorldText(getAllPlayers(), "gold mine", goldPos + Vector.UP * 5, 2.5, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.YELLOW)
 	createInWorldText(getAllPlayers(), f"{goldMined} gold /5s\nsplit among miners", goldPos + Vector.UP * 2.5, 1.5, Clip.SURFACES, WorldTextReeval.VISIBILITY)
 
 	# bloods
@@ -188,9 +212,14 @@ rule "visuals":
 		wait()
 	# sins
 
-	# tp
+	# altar
+	createInWorldText(getAllPlayers(), "ancient altar\n", altarPos, 2.3, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.TURQUOISE)
+	createInWorldText(getAllPlayers(), "55 gold for +1-3 to all stats", altarPos, 1.2, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.WHITE)
+	createEffect(getAllPlayers(), Effect.BAD_AURA, Color.TURQUOISE, altarPos, 1.4, EffectReeval.VISIBILITY)
+
+	# phasing
 	for i in range(len(phasePos)):
-		createInWorldText(localPlayer if distance(localPlayer.getPosition(), evalOnce(phasePos[i])) < 10 else null, abilityIconString(Hero.KIRIKO, Button.ABILITY_1), phasePos[i] + Vector.UP * 1.5, 1.2, Clip.NONE, WorldTextReeval.VISIBILITY, Color.WHITE, SpecVisibility.ALWAYS)
+		createInWorldText(localPlayer if distance(localPlayer.getPosition(), evalOnce(phasePos[i])) < 18 else null, abilityIconString(Hero.KIRIKO, Button.ABILITY_1), phasePos[i] + Vector.UP * 1.5, 1.2, Clip.NONE, WorldTextReeval.VISIBILITY, Color.WHITE, SpecVisibility.ALWAYS)
 		if phaseLevels[i]:
 			createInWorldText(localPlayer if distance(localPlayer.getPosition(), evalOnce(phasePos[i])) < 10 else null, "{} level {}".format(iconString(Icon.CHECKMARK) if localPlayer.level >= evalOnce(phaseLevels[i]) else iconString(Icon.CROSS), evalOnce(phaseLevels[i])), phasePos[i] + Vector.UP, 0.9, Clip.NONE, WorldTextReeval.VISIBILITY_AND_STRING, Color.WHITE, SpecVisibility.ALWAYS)
 		wait()
@@ -218,6 +247,28 @@ rule "player init":
 	createBeam(getAllPlayers() if eventPlayer.currentChalice != -1 and eventPlayer.isAlive() else null, Beam.BAD, eventPlayer, bloodOrb(bloodPos[eventPlayer.currentChalice]), Color.RED, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
 ### player interactions
 # shopping/banking
+rule "deposit/withdraw":
+	@Event eachPlayer
+	@Condition eventPlayer.isHoldingButton(Button.INTERACT)
+	@Condition eventPlayer.detectedShop == -1
+	@Condition eventPlayer.isInSpawnRoom()
+	# *= would be better but stupid rounding
+	if distance(eventPlayer.getPosition(), depositPos) < bankRad:
+		eventPlayer.collide_i = floor(eventPlayer.cash * sliderScalar(eventPlayer))
+		eventPlayer.bank += eventPlayer.collide_i
+		eventPlayer.cash -= eventPlayer.collide_i
+		alignSmallMsg(eventPlayer, f"withdrew {eventPlayer.collide_i} gold.")
+	elif distance(eventPlayer.getPosition(), withdrawPos) < bankRad:
+		eventPlayer.collide_i = floor(eventPlayer.bank * sliderScalar(eventPlayer))
+		eventPlayer.cash += eventPlayer.collide_i
+		eventPlayer.bank -= eventPlayer.collide_i
+		alignSmallMsg(eventPlayer, f"deposited {eventPlayer.collide_i} gold.")
+	else:
+		return
+	wait(0.112)
+	playEffect(eventPlayer, DynamicEffect.RING_EXPLOSION, bankColor, eventPlayer, bankRad)
+	playEffect(eventPlayer, DynamicEffect.RING_EXPLOSION_SOUND, bankColor, eventPlayer.getPosition(), 25)
+
 rule "buy 1":
 	@Event eachPlayer
 	@Condition eventPlayer.isInSpawnRoom()
@@ -235,7 +286,7 @@ rule "buy 1":
 	eventPlayer.level++
 	playEffect(eventPlayer, DynamicEffect.GOOD_PICKUP_EFFECT, statColors[eventPlayer.detectedShop], statPos[eventPlayer.detectedShop] + Vector.UP, true)
 	wait(0.096)
-	if eventPlayer.detectedShop and eventPlayer.isHoldingButton(Button.PRIMARY_FIRE):
+	if eventPlayer.detectedShop and eventPlayer.isHoldingButton(buy1Bind):
 		loop()
 	else:
 		playEffect(eventPlayer, DynamicEffect.BUFF_IMPACT_SOUND, statColors[eventPlayer.detectedShop], eventPlayer, 30)
@@ -302,11 +353,7 @@ rule "gold loop":
 	wait(5)
 	loop()
 # interacts
-rule "outside spawn: oath, sin, ritual":
-	@Event eachPlayer
-	@Condition eventPlayer.isAlive()
-	@Condition eventPlayer.isHoldingButton(Button.INTERACT)
-	@Condition not eventPlayer.isInSpawnRoom()
+macro oathInteractCheck():
 	for eventPlayer.interact_i in range(len(oathNames)):
 		if distance(eventPlayer.getPosition(), oathPos[eventPlayer.interact_i]) < 1.5:
 			# reset oaths
@@ -348,6 +395,22 @@ rule "outside spawn: oath, sin, ritual":
 			lbl_0:
 			setStats()
 			break
+
+macro altarInteractCheck():
+	if distance(eventPlayer, altarPos) < 2:
+
+		return
+
+rule "outside spawn interacts: oath, sin, altar":
+	@Event eachPlayer
+	@Condition eventPlayer.isAlive()
+	@Condition eventPlayer.isHoldingButton(Button.INTERACT)
+	@Condition not eventPlayer.isInSpawnRoom()
+
+	oathInteractCheck()
+
+	altarInteractCheck()
+
 	wait(0.48)
 
 rule "shop detection":
@@ -397,11 +460,13 @@ rule "phase":
 	@Condition eventPlayer.isAlive()
 	@Condition not eventPlayer.isInSpawnRoom()
 	if distance(eventPlayer.getPosition(), phasePos[eventPlayer.collide_i]) < phaseRadii[eventPlayer.collide_i]:
-		if true or eventPlayer.level >= phaseLevels[eventPlayer.collide_i]: # DEBUG
+		if eventPlayer.level >= phaseLevels[eventPlayer.collide_i]:
 			eventPlayer.disableEnvironmentCollision(false)
 			waitUntil(distance(eventPlayer.getPosition(), phasePos[eventPlayer.collide_i]) > phaseRadii[eventPlayer.collide_i] or eventPlayer.getPosition().y < phasePos[eventPlayer.collide_i].y - 0.5, 5)
 			eventPlayer.enableEnvironmentCollision()
-	wait(0.048)
+		else:
+			alignSmallMsg(eventPlayer, f"you need to be level {phaseLevels[eventPlayer.collide_i]} to access this area.")
+	wait(0.036)
 	eventPlayer.collide_i += 1
 	if eventPlayer.collide_i > len(phasePos):
 		eventPlayer.collide_i = 0
@@ -456,7 +521,7 @@ rule "dmg quest":
 rule "interest":
 	@Event eachPlayer
 	wait(60)
-	eventPlayer.bank += round(eventPlayer.bank * eventPlayer.stats[STATS.INTEREST])
+	eventPlayer.bank += round(eventPlayer.bank * eventPlayer.stats[STATS.INTEREST] / 100)
 	loop()
 # kills
 rule "kill":
@@ -471,10 +536,10 @@ rule "kill":
 	if victim.pkExpiry > getTotalTimeElapsed():
 		eventPlayer.cash += victim.pkBounty
 		victim.cash -= victim.pkBounty
-		alignSmallMsg(eventPlayer, f"stole {floor(victim.cash * 0.1)} gold from victim")
-		alignSmallMsg(victim, f"killer looted {floor(victim.cash * 0.1)} gold from you")
+		alignSmallMsg(eventPlayer, f"killed a murderer. bounty: {victim.pkBounty}")
 
-	if victim.pkExpiry > getTotalTimeElapsed() and eventPlayer.questGoal != victim:
+	# assign pk
+	if victim.pkExpiry < getTotalTimeElapsed() and eventPlayer.questGoal != victim:
 		eventPlayer.pkBounty += round(20 * MoneyMult(eventPlayer))
 		eventPlayer.pkExpiry = getTotalTimeElapsed() + (60 if eventPlayer.oath == OATH.SPRING else 30)
 
@@ -509,6 +574,18 @@ rule "respawn in tavern":
 	eventPlayer.teleport(townPos)
 # events
 # shrine effects
+rule "shrine capturing":
+	for shrine_i in range(len(shrineOwners)):
+		shrineTemp = getRealPlayersInRadius(shrinePos[shrine_i], 1)
+		if len(shrineTemp) == 0:
+			shrineProgress[shrine_i] = 0
+			shrineOwners[shrine_i] = null
+		elif len(shrineTemp) == 1:
+			shrineProgress[shrine_i] += 0.18
+			shrineOwners[shrine_i] = shrineTemp[0]
+
+	wait(0.36)
+	loop()
 rule "shrine persistent":
 	shrineOwners[SHRINES.ULT].setUltCharge(shrineOwners[SHRINES.ULT].getUltCharge() + 6)
 	shrineOwners[SHRINES.GREED].stats[STATS.INCOME] = min(shrineOwners[SHRINES.GREED].stats[STATS.INCOME] + 30, shrineOwners[SHRINES.GREED].statCaps[STATS.INCOME])
@@ -531,3 +608,5 @@ rule "anti crash off":
         setSlowMotion(100)
         antiCrashOn = false
     while RULE_CONDITION
+
+/**/

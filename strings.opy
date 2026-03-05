@@ -36,8 +36,10 @@ macro questQuips = [
 	]
 ]
 
-globalvar statNames = ["damage", "health", "healing received", "projectile speed", "move speed", "income", "interest", "flight"]
-globalvar statColors = [Color.RED, Color.GREEN, Color.YELLOW, Color.AQUA, Color.LIME_GREEN, Color.YELLOW, Color.ROSE, Color.WHITE, Color.TURQUOISE]
+macro bankColor = Color.YELLOW
+
+globalvar statNames = ["damage", "health", "healing received", "projectile speed", "move speed", "income", "bank interest", "flight"]
+globalvar statColors = [Color.RED, Color.GREEN, Color.YELLOW, Color.AQUA, Color.LIME_GREEN, Color.YELLOW, bankColor, Color.WHITE]
 
 macro SummerReq = 300
 macro AutumnReq = 250
