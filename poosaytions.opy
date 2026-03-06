@@ -18,18 +18,17 @@ globalvar altarPos = vect(88.38, 14, -97.17)
 # shady candy
 # mine2
 
-globalvar phasePos = [vect(-12.17, 1.1, -6.46), vect(-25.1, 1.05, -0.21), vect(27.77, 8.3, -87), vect(34.93, 5, -63.4)]
-globalvar phaseRadii = [1.8, 1.2, 1.21, 2.74]
-globalvar phaseLevels = [0,0,300,300]
+globalvar phasePos = [vect(-12.17, 1.1, -6.46), vect(-25.1, 1.05, -0.21), vect(27.77, 8.3, -87), vect(34.93, 5, -63.4), vect(89.07, 15, -63.8)]
+globalvar phaseRadii = [1.8, 1.2, 1.21, 2.74, 2.3]
+globalvar phaseLevels = [0,0,300,300, 15000 * 3 * 0]
 
-globalvar brawlPos = [vect(12.04, 5.8, -71.9)]
-globalvar brawlRadii = [9]
+# globalvar brawlPos = [vect(12.04, 5.8, -71.9)]
+# globalvar brawlRadii = [9]
 
 macro darkPos = vect(88.15, 12.67, -67.38)
 macro darkRad = 3.4
 
-globalvar diamondPos = vect(1.74, 5, -97)
-macro diamondRad = 4
+
 
 globalvar vengeancePos = vect(54.21, 10.7, -121.6)
 
@@ -46,4 +45,7 @@ macro forageRad = 5.6
 
 globalvar oathPos = [vect(53.11, 6.5, -60.8), vect(75, 10.5, -118.3), vect(60.3, 4.7, -94.5), vect(104, 12.7, -72.8)]
 
-globalvar shrinePos = [vect(31.31, 14, -80.75), vect(67, 4.7, -83.5), vect(32.53, 11.5, -62.8)]
+globalvar shrinePos = [vect(31.31, 14, -80.75), vect(67, 4.7, -83.5), vect(32.53, 11.5, -62.8), vect(1.74, 5, -97)]
+globalvar shrineRad = [1,1,1,4]
+globalvar shrineColor = [Color.LIGHT_GRAY, Color.GREEN, Color.YELLOW, Color.SKY_BLUE]
+macro diamondPos = shrinePos[SHRINES.DIAMOND]

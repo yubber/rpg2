@@ -21,7 +21,7 @@ settings {
             "tankPassiveHealthBonus": "disabled"
         },
         "general": {
-            "healthPackRespawnTime%": 60,
+            "healthPackRespawnTime%": 120,
             "spawnHealthPacks": "enabled",
             "heroLimit": "off",
             "gamemodeStartTrigger": "immediately"
@@ -133,11 +133,12 @@ rule "init":
 
 rule "visuals":
 	### player
+	print(localPlayer.pkExpiry)
 	hudText(getAllPlayers(), heroIcon(localPlayer.getHero()) if localPlayer.oath == OATH.NONE else oathIcons[localPlayer.oath], f"level {localPlayer.level}", f"{localPlayer.cash} gold", HudPosition.ACTUALLY_LEFT, -1, Color.BLUE, Color.WHITE, Color.WHITE, HudReeval.VISIBILITY_AND_STRING)
 
 	progressBarHud(localPlayer, 100 * localPlayer.questProg / localPlayer.questGoal,
         "get a quest in the tavern" if localPlayer.questType == QUEST.NONE
-        else "{} {}\&fullwidth_space;\&fullwidth_space;reward: {} gold".format(questText[localPlayer.questType], "{} / {}".format(localPlayer.questProg, localPlayer.questGoal) if localPlayer.questType in NumQuests else "{}".format(localPlayer.questGoal), questReward(localPlayer)), HudPosition.TOP, 1, Color.GRAY if localPlayer.questType == -1 else Color.ORANGE, Color.GRAY if localPlayer.questType == -1 else Color.ORANGE, ProgressHudReeval.VISIBILITY_VALUES_AND_COLOR, SpecVisibility.DEFAULT)
+        else "{} {}\&fullwidth_space;\&fullwidth_space;reward: {} gold".format(questText[localPlayer.questType], "{} / {}".format(localPlayer.questProg, localPlayer.questGoal) if localPlayer.questType != QUEST.BOUNTY else "{} {}".format(heroIcon(localPlayer.questGoal.getHero()), localPlayer.questGoal), questReward(localPlayer)), HudPosition.TOP, 1, Color.GRAY if localPlayer.questType == -1 else Color.ORANGE, Color.GRAY if localPlayer.questType == -1 else Color.ORANGE, ProgressHudReeval.VISIBILITY_VALUES_AND_COLOR, SpecVisibility.DEFAULT)
 
 	createInWorldText(localPlayer if localPlayer.detectedShop != -1 else null, f"{localPlayer.stats[localPlayer.detectedShop]} / {localPlayer.statCaps[localPlayer.detectedShop]}% {statNames[localPlayer.detectedShop]}", updateEveryFrame(localPlayer.getEyePosition() + localPlayer.getFacingDirection() * 999 + Vector.UP * 99), 1.3, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, statColors[localPlayer.detectedShop])
 	createInWorldText(localPlayer if localPlayer.detectedShop != -1 else null, f"{buttonToString(buy1Bind)} buy\n{buttonToString(buyAllBind)} buy maximum", updateEveryFrame(localPlayer.getEyePosition() + localPlayer.getFacingDirection() * 999), 1.3, Clip.NONE, WorldTextReeval.VISIBILITY_POSITION_STRING_AND_COLOR, Color.WHITE)
@@ -145,7 +146,7 @@ rule "visuals":
 	### world
 	# bank
 	createInWorldText(getAllPlayers(), "bank", statPos[STATS.INTEREST] + Vector.UP * 4, 3, Clip.SURFACES, WorldTextReeval.VISIBILITY, bankColor)
-	createInWorldText(getAllPlayers(), f"balance: {localPlayer.bank} gold", statPos[STATS.INTEREST] + Vector.UP * 3, 1.5, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING, bankColor)
+	createInWorldText(getAllPlayers(), f"balance: {localPlayer.bank} gold", statPos[STATS.INTEREST] + Vector.UP * 3, 1.5, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING, Color.WHITE)
 	for i in range(len(bankPos)):
 		# prompt
 		createInWorldText(getAllPlayers(), "deposit" if i == 0 else "withdraw", bankPos[i] + Vector.UP * 0.5, 2, Clip.SURFACES, WorldTextReeval.VISIBILITY, bankColor)
@@ -155,7 +156,7 @@ rule "visuals":
 		createBeam(localPlayer if distance(localPlayer.getPosition(), evalOnce(bankPos[i])) < bankRad else null, Beam.GRAPPLE, baseSliderPos, baseSliderPos + Vector.UP * sliderLength, bankColor, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
 		# thumb
 		createEffect(localPlayer if distance(localPlayer.getPosition(), evalOnce(bankPos[i])) < bankRad else null, Effect.SPHERE, bankColor,
-			baseSliderPos + Vector.UP * (sliderLength * sliderScalar(localPlayer)), 0.06, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
+			updateEveryFrame(baseSliderPos + Vector.UP * (sliderLength * sliderScalar(localPlayer))), 0.06, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
 		# 0
 		createInWorldText(localPlayer if distance(localPlayer.getPosition(), evalOnce(bankPos[i])) < bankRad else null, 0,
 			baseSliderPos - 0.2 * Vector.UP, 1.2, Clip.NONE, WorldTextReeval.VISIBILITY_AND_POSITION, Color.WHITE)
@@ -175,8 +176,18 @@ rule "visuals":
 	createEffect(getAllPlayers(), Effect.RING, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
 	createEffect(getAllPlayers(), Effect.SPARKLES, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
 	createEffect(getAllPlayers(), Effect.SPARKLES_SOUND, Color.YELLOW, goldPos, goldRadius, EffectReeval.VISIBILITY)
-	createInWorldText(getAllPlayers(), "gold mine", goldPos + Vector.UP * 5, 2.5, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.YELLOW)
-	createInWorldText(getAllPlayers(), f"{goldMined} gold /5s\nsplit among miners", goldPos + Vector.UP * 2.5, 1.5, Clip.SURFACES, WorldTextReeval.VISIBILITY)
+	createInWorldText(getAllPlayers(), "gold scrap heap", goldPos + Vector.UP * 5, 2.5, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.YELLOW)
+	createInWorldText(getAllPlayers(), f"{goldMined/2} gold /s\nsplit among miners", goldPos + Vector.UP * 2.5, 1.5, Clip.SURFACES, WorldTextReeval.VISIBILITY)
+
+	# shrines
+	for i in range(len(shrinePos)):
+		createEffect(getAllPlayers(), Effect.RING, shrineColor[i], shrinePos[i], shrineRad[i], EffectReeval.VISIBILITY)
+		createInWorldText(getAllPlayers(), shrineNames[i], shrinePos[i] + Vector.UP * 5, 2.5, Clip.SURFACES, WorldTextReeval.VISIBILITY, shrineColor[i])
+		createInWorldText(getAllPlayers(), shrineDescs[i], shrinePos[i] + Vector.UP * 4, 2, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.WHITE)
+
+	# diamond extras
+	for i in range(4):
+		createBeam(getAllPlayers(), Beam.BAD, diamondPos, diamondPos + directionFromAngles(evalOnce(i * 90) + getTotalTimeElapsed() * 120,80) * 5, Color.GRAY, EffectReeval.VISIBILITY_POSITION_AND_RADIUS)
 
 	# bloods
 	for i in range(len(bloodPos)):
@@ -197,9 +208,9 @@ rule "visuals":
 
 		# hud
 		if statHardCaps[i] == 1:
-			hudSubheader(localPlayer if localPlayer.stats[evalOnce(i)] else null, statNames[i], HudPosition.ACTUALLY_LEFT, i, Color.SKY_BLUE, HudReeval.VISIBILITY)
+			hudSubheader(localPlayer if localPlayer.stats[evalOnce(i)] else null, statNames[i], HudPosition.ACTUALLY_LEFT, i+len(statNames), Color.SKY_BLUE, HudReeval.VISIBILITY)
 		else:
-			hudSubheader(localPlayer, f"{evalOnce(statNames[i])}: {localPlayer.stats[evalOnce(i)]}%", HudPosition.ACTUALLY_LEFT, i, Color.SKY_BLUE, HudReeval.VISIBILITY_AND_STRING)
+			hudSubtext(localPlayer, f"{evalOnce(statNames[i])}: {localPlayer.stats[evalOnce(i)]}%", HudPosition.ACTUALLY_LEFT, i, Color.SKY_BLUE, HudReeval.VISIBILITY_AND_STRING)
 
 		wait()
 	# oaths
@@ -207,21 +218,21 @@ rule "visuals":
 		createEffect(getAllPlayers(), Effect.RING, oathColors[i], oathPos[i], 1.5, EffectReeval.VISIBILITY)
 		createEffect(getAllPlayers(), Effect.SPARKLES, oathColors[i], oathPos[i], 1.5, EffectReeval.VISIBILITY)
 		createInWorldText(getAllPlayers(), oathIcons[i], oathPos[i]+Vector.UP * 3, 2, Clip.SURFACES, WorldTextReeval.VISIBILITY, oathColors[i])
-		createInWorldText(getAllPlayers(), f"oath of {oathNames[i]}", oathPos[i]+Vector.UP * 2, 2.6, Clip.SURFACES, WorldTextReeval.VISIBILITY, oathColors[i])
+		createInWorldText(getAllPlayers(), f"oath of {oathNames[i]}", oathPos[i]+Vector.UP * 2, 2.3, Clip.SURFACES, WorldTextReeval.VISIBILITY, oathColors[i])
 		createInWorldText(getAllPlayers(), inspectPrompt if localPlayer.isHoldingButton(Button.CROUCH) == false else f"{evalOnce(oathDescs[i])}\n{buttonToString(Button.INTERACT)} pledge. max 1 oath.", oathPos[i]+Vector.UP, 1, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING, Color.WHITE)
 		wait()
 	# sins
 
 	# altar
 	createInWorldText(getAllPlayers(), "ancient altar\n", altarPos, 2.3, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.TURQUOISE)
-	createInWorldText(getAllPlayers(), "55 gold for +1-3 to all stats", altarPos, 1.2, Clip.SURFACES, WorldTextReeval.VISIBILITY, Color.WHITE)
+	createInWorldText(getAllPlayers(), f"{buttonToString(Button.INTERACT)} 55 gold for +1-3 to all stats", altarPos, 1.2, Clip.SURFACES, WorldTextReeval.VISIBILITY_AND_STRING, Color.WHITE)
 	createEffect(getAllPlayers(), Effect.BAD_AURA, Color.TURQUOISE, altarPos, 1.4, EffectReeval.VISIBILITY)
 
 	# phasing
 	for i in range(len(phasePos)):
 		createInWorldText(localPlayer if distance(localPlayer.getPosition(), evalOnce(phasePos[i])) < 18 else null, abilityIconString(Hero.KIRIKO, Button.ABILITY_1), phasePos[i] + Vector.UP * 1.5, 1.2, Clip.NONE, WorldTextReeval.VISIBILITY, Color.WHITE, SpecVisibility.ALWAYS)
 		if phaseLevels[i]:
-			createInWorldText(localPlayer if distance(localPlayer.getPosition(), evalOnce(phasePos[i])) < 10 else null, "{} level {}".format(iconString(Icon.CHECKMARK) if localPlayer.level >= evalOnce(phaseLevels[i]) else iconString(Icon.CROSS), evalOnce(phaseLevels[i])), phasePos[i] + Vector.UP, 0.9, Clip.NONE, WorldTextReeval.VISIBILITY_AND_STRING, Color.WHITE, SpecVisibility.ALWAYS)
+			createInWorldText(localPlayer if distance(localPlayer.getPosition(), evalOnce(phasePos[i])) < 18 else null, "{} level {}".format(iconString(Icon.CHECKMARK) if localPlayer.level >= evalOnce(phaseLevels[i]) else iconString(Icon.CROSS), evalOnce(phaseLevels[i])), phasePos[i] + Vector.UP, 0.9, Clip.NONE, WorldTextReeval.VISIBILITY_AND_STRING, Color.WHITE, SpecVisibility.ALWAYS)
 		wait()
 
 rule "player init":
@@ -343,14 +354,14 @@ rule "blood chalice":
 
 rule "gold loop":
 	goldPlayers = [x for x in getRealPlayersInRadius(goldPos, goldRadius, Team.ALL, LosCheck.OFF) if not x.sins[SINS.ENVY]]
-	alignSmallMsg(goldPlayers, f"dug up {MoneyMult(localPlayer) * goldMined} gold")
+	alignSmallMsg(goldPlayers, f"dug up {round(MoneyMult(localPlayer) * goldMined)} gold")
 	for gold_i in range(len(goldPlayers)):
-		goldPlayers[gold_i].cash += MoneyMult(goldPlayers[gold_i]) * goldMined
+		goldPlayers[gold_i].cash += round(MoneyMult(goldPlayers[gold_i]) * goldMined)
 		if goldPlayers[gold_i].questType == QUEST.GOLD:
-			goldPlayers[gold_i].questProg += MoneyMult(goldPlayers[gold_i]) * goldMined
-	playEffect(goldPlayers, DynamicEffect.BAD_PICKUP_EFFECT, Color.YELLOW, goldPos, 3)
-	playEffect(goldPlayers, DynamicEffect.GOOD_PICKUP_EFFECT, Color.YELLOW, goldPos, 30)
-	wait(5)
+			goldPlayers[gold_i].questProg += round(MoneyMult(goldPlayers[gold_i]) * goldMined)
+	playEffect(goldPlayers, DynamicEffect.BUFF_EXPLOSION_SOUND, Color.YELLOW, goldPos, 30)
+	playEffect(goldPlayers, DynamicEffect.GOOD_EXPLOSION, Color.YELLOW, goldPos, 5)
+	wait(2 * len(goldPlayers))
 	loop()
 # interacts
 macro oathInteractCheck():
@@ -398,7 +409,14 @@ macro oathInteractCheck():
 
 macro altarInteractCheck():
 	if distance(eventPlayer, altarPos) < 2:
+		if eventPlayer.cash < 60:
+			alignSmallMsg(eventPlayer, "you came to seek the ancients' blessing and you didn't even bring enough tribute?")
+			return
+		eventPlayer.cash -= 60
 
+		if eventPlayer.questType == QUEST.ALTAR:
+			eventPlayer.questProg += 1
+		# todo
 		return
 
 rule "outside spawn interacts: oath, sin, altar":
@@ -439,8 +457,10 @@ rule "in a spawn":
 
 	if eventPlayer.pkExpiry > getTotalTimeElapsed():
 		alignSmallMsg(eventPlayer, f"{barista} no murderers allowed in the tavern!")
-		eventPlayer.applyImpulse(directionTowards(townPos, eventPlayer.getEyePosition()), 20, Relativity.TO_WORLD)
+		eventPlayer.applyImpulse(directionTowards(townPos, eventPlayer.getEyePosition()), 80, Relativity.TO_WORLD)
 		damage(eventPlayer,null,eventPlayer.getMaxHealth() * 0.4)
+		eventPlayer.setStatusEffect(null, Status.KNOCKED_DOWN, 0.3)
+		wait(0.24)
 		if ruleCondition:
 			loop()
 
@@ -518,6 +538,11 @@ rule "dmg quest":
 	@Condition eventPlayer.questType == QUEST.DAMAGE
 	eventPlayer.questProg += eventDamage
 ### world clock stuff
+rule "min ult":
+	@Event eachPlayer
+	eventPlayer.setUltCharge(max(eventPlayer.getUltCharge(), eventPlayer.stats[STATS.MIN_ULT]))
+	wait(2)
+	loop()
 rule "interest":
 	@Event eachPlayer
 	wait(60)
@@ -578,16 +603,19 @@ rule "shrine capturing":
 	for shrine_i in range(len(shrineOwners)):
 		shrineTemp = getRealPlayersInRadius(shrinePos[shrine_i], 1)
 		if len(shrineTemp) == 0:
-			shrineProgress[shrine_i] = 0
-			shrineOwners[shrine_i] = null
+			if shrineProgress[shrine_i] < 100:
+				shrineProgress[shrine_i] = 0
+				shrineCappers[shrine_i] = null
 		elif len(shrineTemp) == 1:
-			shrineProgress[shrine_i] += 0.18
-			shrineOwners[shrine_i] = shrineTemp[0]
+			shrineProgress[shrine_i] += 18
+			shrineCappers[shrine_i] = shrineTemp[0]
+			if shrineProgress[shrine_i] >= 100:
+				shrineOwners[shrine_i] = shrineCappers[shrine_i]
 
-	wait(0.36)
+	wait(0.48)
 	loop()
 rule "shrine persistent":
-	shrineOwners[SHRINES.ULT].setUltCharge(shrineOwners[SHRINES.ULT].getUltCharge() + 6)
+	shrineOwners[SHRINES.ULT].setUltCharge(shrineOwners[SHRINES.ULT].getUltCharge() + 15)
 	shrineOwners[SHRINES.GREED].stats[STATS.INCOME] = min(shrineOwners[SHRINES.GREED].stats[STATS.INCOME] + 30, shrineOwners[SHRINES.GREED].statCaps[STATS.INCOME])
 	wait(3)
 	loop()

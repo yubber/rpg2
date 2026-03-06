@@ -32,11 +32,12 @@ macro questQuips = [
 		"don't bother looting the car's catalytic converter. i already sold it."
 	],[
 		"remember to have enough gold on hand to use it.",
-		"i don't like how that thing's giving out stats like candy. it's hurting my business."
+		"i don't like how that thing's giving out stats like candy. it's hurting my business.",
+		"the elder gods really, really want you to button mash for their blessing. i don't get it either."
 	]
 ]
 
-macro bankColor = Color.YELLOW
+macro bankColor = Color.BLUE
 
 globalvar statNames = ["damage", "health", "healing received", "projectile speed", "move speed", "income", "bank interest", "flight"]
 globalvar statColors = [Color.RED, Color.GREEN, Color.YELLOW, Color.AQUA, Color.LIME_GREEN, Color.YELLOW, bankColor, Color.WHITE]
@@ -86,7 +87,8 @@ globalvar sinDescs = [
 	"you lose 1% of your upgrades to a random stat on kill."
 ]
 
-globalvar shrineNames = ["the mountain", "lord mammon", "potential"]
+globalvar shrineNames = ["shrine of the mountain", "effigy of lord mammon", "shrine of potential", "diamond quarry"]
+globalvar shrineDescs = ["", "+10% income /s", "+5% ult charge /s", "+1 diamond / 10s"]
 
 playervar lastKiller
 macro vengeanceDesc = f"curse the last player who killed you, instantly killing them.\nyou must stay alive in the circle for 20s. the target will be alerted.\ncannot start if they are in spawn.\nif successful, you must be killed again to reuse the ritual.\n\n{buttonToString(Button.INTERACT)} - start ritual against {localPlayer.lastKiller} (sacrifices 50% health)"

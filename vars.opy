@@ -8,6 +8,7 @@ enum STATS:
 	SPEED,
 	INCOME,
 	INTEREST,
+	MIN_ULT,
 	FLIGHT
 
 globalvar i
@@ -19,12 +20,12 @@ globalvar statCosts = [25, 25, 25, 5, 100, 7, 1000, 5000000]
 
 globalvar goldPlayers
 globalvar gold_i
-macro goldMined = 25
+macro goldMined = 10
 
-macro startStats =  		[100,	100,	100,		100,	100,	100,	10,		0]
-globalvar statHardCaps =		[5000000,5000000,5000000,	500,	600,	5000000,100,	1]
-macro rebirthCapIncrease = 	[30000, 30000, 30000, 		0,		0,		30000,	50,		0]
-macro startStatCaps =		[10000, 10000, 10000, 		500, 	600, 	10000,	100,	1]
+macro startStats =  		[100,	100, 100,	100,	100,	100,	10,		0,	0]
+globalvar statHardCaps =	[50000,50000,50000, 500,	600,	5000000,100,	100,1]
+macro rebirthCapIncrease = 	[15000,15000,15000, 0,		0,		10000,	50,		25,	1]
+macro startStatCaps =		[20000,20000,20000, 500, 	600, 	10000,	100,	25,	0]
 
 playervar stats
 playervar statCaps
@@ -59,7 +60,7 @@ enum QUEST:
 	ALTAR # last
 
 # todo subtext
-macro NumQuests = [QUEST.KILL, QUEST.BLOOD, QUEST.GOLD, QUEST.DAMAGE, QUEST.ALTAR]
+# macro NumQuests = [QUEST.KILL, QUEST.BLOOD, QUEST.GOLD, QUEST.DAMAGE, QUEST.ALTAR]
 
 playervar questGoal
 playervar questProg
@@ -69,7 +70,7 @@ playervar questRerollLock
 globalvar questRewardScales = [30, 150, 0.06, 0.15, 2, 110]
 macro questReward(Player):
 	round(questRewardScales[Player.questType]
-		* (Player.questGoal if Player.questType in NumQuests else 1)
+		* (Player.questGoal if Player.questType != QUEST.BOUNTY else 1)
 		* (2 if Player.guild == GUILD.MERC else 1)
 		* MoneyMult(Player))
 
@@ -80,10 +81,10 @@ playervar cash
 
 playervar bank
 macro sliderScalar(Player):
-	max(0, min(1, Player.getVerticalFacingAngle() / -60 + 0.5))
+	max(0, min(1, Player.getVerticalFacingAngle() / -40 + 0.5))
 
 macro sliderLength = 1.5
-macro baseSliderPos = (localPlayer.getEyePosition() + 2 * normalize(localPlayer.getFacingDirection() * vect(1,0,1)) - (0.6 * Vector.UP))
+macro baseSliderPos = (localPlayer.getEyePosition() + 3 * normalize(localPlayer.getFacingDirection() * vect(1,0,1)) - (0.6 * Vector.UP))
 
 playervar collide_i # for phasing, shop buy calcs and bank txn calcs
 playervar interact_i # for oaths/sins and shop items
@@ -110,8 +111,10 @@ globalvar antiCrashOn
 enum SHRINES:
 	MOUNTAIN,
 	GREED,
-	ULT
+	ULT,
+	DIAMOND
 globalvar shrineOwners = [null,null,null]
+globalvar shrineCappers = [null,null,null]
 globalvar shrineProgress = [0,0,0]
 globalvar shrine_i
 globalvar shrineTemp
